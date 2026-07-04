@@ -16,15 +16,21 @@ the next milestone starts. This file is updated at every milestone boundary.
 - [x] ROADMAP.md (this file), README.md
 - [x] `cargo build` + `cargo test` + fmt + clippy green locally
 - [x] Initial commit
-- [ ] **REVIEW GATE 0** ← next stop
+- [x] **REVIEW GATE 0** — passed 2026-07-04
 
-## M1 — Audio capture ☐
-- [ ] `od-audio`: cpal WASAPI stream, 16 kHz mono f32 resample
-- [ ] Lock-free SPSC ring buffer (~30 s), allocation-free capture callback
-- [ ] Device enumeration, selection, hot-swap; default-device-change handling
-- [ ] RMS level meter event stream
-- [ ] Tests: resampler unit tests; WAV-dump integration test (fixture graph)
-- [ ] Review gate
+## M1 — Audio capture ◐
+- [x] `od-audio`: cpal WASAPI stream, 16 kHz mono f32 resample
+      (rational-phase linear resampler, exactly chunk-invariant)
+- [x] Lock-free SPSC ring buffer (rtrb, 30 s, drop-newest + overrun counter),
+      allocation-free capture callback
+- [x] Device enumeration, selection; hot-swap = session restart; unplug surfaces
+      via `is_disconnected()` (cpal has no device-change events — documented)
+- [x] RMS level meter (atomic, instant attack / exponential release; UI polls)
+- [x] Tests: 21 unit (dsp/ring/meter/device) + 2 integration (synthetic graph,
+      WAV round-trip) + `#[ignore]`d live-mic smoke + `record_wav` example
+- [x] Live verification: 2 s capture from real device, 48 kHz stereo → 16 kHz
+      mono, 0 overruns
+- [ ] **REVIEW GATE 1** ← next stop
 
 ## M2 — Streaming transcription ☐
 - [ ] `od-vad`: Silero v5 via `ort`; SpeechStart/SpeechEnd + hangover config

@@ -7,3 +7,14 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+# Cross-platform audio I/O (WASAPI on Windows). ADR-3.
+cpal = "0.16"
+# Wait-free SPSC ring buffer, zero deps. Chosen over a hand-rolled ring:
+# lock-free correctness is not a place for NIH (see docs/02, threading model).
+rtrb = "0.3"
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+# WAV read/write for integration tests and the record_wav example.
+hound = "3"
