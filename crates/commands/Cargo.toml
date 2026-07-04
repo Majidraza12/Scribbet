@@ -1,0 +1,9 @@
+﻿[package]
+name = "od-commands"
+description = "Voice-command grammar and interpreter ('new paragraph', 'delete previous sentence', ...)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]

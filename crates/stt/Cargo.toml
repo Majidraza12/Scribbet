@@ -1,0 +1,9 @@
+[package]
+name = "od-stt"
+description = "SttEngine trait and backends: whisper.cpp (default), Moonshine ONNX (optional streaming)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]

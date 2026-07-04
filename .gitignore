@@ -1,0 +1,29 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Node / frontend (apps/desktop, added at M3)
+node_modules/
+dist/
+
+# Tauri
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
+
+# Local model files are never vendored (downloaded to %LOCALAPPDATA% at runtime;
+# test fixtures under testdata/ ARE committed)
+*.gguf
+*.ggml
+*.onnx
+!crates/vad/testdata/*.onnx
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store
+
+# Logs and local scratch
+*.log
+/scratch/

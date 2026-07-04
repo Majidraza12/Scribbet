@@ -1,0 +1,9 @@
+[package]
+name = "od-rewrite"
+description = "Optional Rewriter trait. RulesRewriter passthrough is the default; Claude/OpenAI/local-LLM backends are feature-gated future plugins."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]

@@ -1,0 +1,9 @@
+[package]
+name = "od-insertion"
+description = "TextInserter trait and Windows backend: UIA TextPattern -> SendInput -> clipboard-paste-restore."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]

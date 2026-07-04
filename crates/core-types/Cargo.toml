@@ -1,0 +1,9 @@
+[package]
+name = "od-core-types"
+description = "Shared domain types, pipeline events, errors, and PipelineCtx used by every stage."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]

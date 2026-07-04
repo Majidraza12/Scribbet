@@ -1,0 +1,9 @@
+[package]
+name = "od-pipeline"
+description = "Session controller state machine, actor-per-stage orchestration, bounded channels, latency metrics."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]

@@ -1,0 +1,9 @@
+[package]
+name = "od-storage"
+description = "Persistence: rusqlite repositories (history, dictionary), atomic JSON settings, TOML profiles."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]

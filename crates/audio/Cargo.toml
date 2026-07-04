@@ -1,0 +1,9 @@
+[package]
+name = "od-audio"
+description = "Microphone capture via cpal (WASAPI), lock-free ring buffer, and input-device management."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]

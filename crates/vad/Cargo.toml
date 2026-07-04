@@ -1,0 +1,9 @@
+[package]
+name = "od-vad"
+description = "Voice activity detection: Silero v5 via ONNX Runtime, gating speech segments before STT."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]

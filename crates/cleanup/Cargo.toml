@@ -1,0 +1,9 @@
+[package]
+name = "od-cleanup"
+description = "Rule-based text cleanup: TextProcessor trait and the ordered processor chain (whitespace, fillers, dictionary, symbols, punctuation, segmentation, capitalization, user rules, profiles)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]

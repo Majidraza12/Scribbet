@@ -1,0 +1,52 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/core-types",
+    "crates/audio",
+    "crates/vad",
+    "crates/stt",
+    "crates/cleanup",
+    "crates/rewrite",
+    "crates/commands",
+    "crates/insertion",
+    "crates/pipeline",
+    "crates/storage",
+]
+# apps/desktop (Tauri shell) joins the workspace at Milestone 3,
+# when the first UI surface (tray + overlay pill) is built.
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = ""
+rust-version = "1.85"
+
+[workspace.dependencies]
+# Internal crates
+od-core-types = { path = "crates/core-types" }
+od-audio = { path = "crates/audio" }
+od-vad = { path = "crates/vad" }
+od-stt = { path = "crates/stt" }
+od-cleanup = { path = "crates/cleanup" }
+od-rewrite = { path = "crates/rewrite" }
+od-commands = { path = "crates/commands" }
+od-insertion = { path = "crates/insertion" }
+od-pipeline = { path = "crates/pipeline" }
+od-storage = { path = "crates/storage" }
+
+# Shared external dependencies (versions pinned once, used by member crates)
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+panic = "abort"
+
+[profile.dev]
+# Faster iteration; overridden per-crate later if debugging needs full info.
+debug = "line-tables-only"
