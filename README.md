@@ -57,7 +57,7 @@ cargo test  --workspace
 
 - [Product analysis](docs/01-product-analysis.md) — category study and positioning
 - [Architecture](docs/02-architecture.md) — diagrams, component walkthrough, latency budget
-- [Tech decisions](docs/03-tech-decisions.md) — ADR-1…15
+- [Tech decisions](docs/03-tech-decisions.md) — ADR-1…17
 - [Security](docs/06-security.md) — threat model and privacy posture
 
 ## Status

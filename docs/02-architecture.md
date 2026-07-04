@@ -147,14 +147,110 @@ A per-app quirk table (by process name) pins the best tier and timing quirks (e.
 terminals, RDP windows, Electron apps). Focus tracking captures the target *at hotkey
 press*, so text lands where the user started even if focus flickers.
 
+### Event bus (architectural concept — not implemented until stages exist)
+
+Alongside the point-to-point stage channels (which carry the *data* flow: audio frames,
+segments), the pipeline publishes **domain events** on a broadcast bus. Stage channels
+are private plumbing; the event bus is the public, observable surface of the system —
+the UI, metrics, history writer, and future plugins subscribe to it without touching the
+hot path.
+
+```rust
+enum AppEvent {
+    SpeechStarted   { t: Instant },
+    SpeechEnded     { t: Instant, duration: Duration },
+    PartialUpdated  { text: String, stable_prefix_len: usize },
+    FinalReady      { segment_id: SegmentId, raw: String, cleaned: String },
+    Inserted        { segment_id: SegmentId, tier: InsertionTier, latency: Duration },
+    CommandExecuted { command: CommandKind, outcome: CommandOutcome },
+    Undo            { segment_id: SegmentId },
+    ProfileChanged  { from: ProfileId, to: ProfileId, cause: ProfileSwitchCause },
+}
+```
+
+Rules: events are facts (past tense), never requests — publishing is fire-and-forget and
+can never block a pipeline stage (bounded broadcast channel, slow subscribers drop and
+log). Latency metrics fall out of event timestamps (`SpeechEnded` → `Inserted`).
+Subscribers today: overlay pill, tray, history writer, metrics HUD. Subscribers later:
+context detection, plugins — no pipeline changes needed to add them. Delivery lands
+incrementally with the stages that emit each event (M2 onward); the enum above is the
+contract.
+
+### Profiles — the configuration unit
+
+A profile is **not just a formatting mode**: it is the complete per-context configuration
+bundle. Everything the pipeline consults that can vary by context lives in the active
+profile:
+
+```toml
+# %APPDATA%/OpenDictate/profiles/coding.toml
+[profile]           # identity
+name = "Coding"
+
+[stt]               # engine hints
+language = "en"
+vocab_bias = ["dictionary:programming", "dictionary:user"]
+
+[cleanup]           # processor chain configuration
+fillers.enabled = true
+capitalization.enabled = false        # code casing owns this
+symbols.table = "programming"         # "open brace" -> {, "arrow" -> ->
+
+[dictionaries]      # which dictionary sets apply
+sets = ["user", "programming"]
+
+[format]            # profile-specific final pass
+casing_commands = true                # "camel case foo bar" -> fooBar
+
+[cloud]             # cloud policy (see 06-security T2)
+rewriter_allowed = false              # hard deny, even if a cloud rewriter is enabled globally
+
+[plugins]           # future: per-profile plugin config (rewriter choice, params)
+# rewriter = "claude"
+```
+
+The active profile is part of `PipelineCtx`, so every `TextProcessor`, the STT bias, and
+the (optional) rewriter read from one coherent snapshot; switching profiles swaps the
+snapshot atomically between utterances, never mid-segment. `ProfileChanged` is published
+on the event bus. Shipped profiles (general, email, coding, meeting, professional,
+medical, legal) are just TOML files — user profiles are the same format in the config
+dir, no code required.
+
+### Context detection (future capability — post-v1, documented for design headroom)
+
+Automatic profile switching keyed on the focused application. The focus tracker in
+`od-insertion` already observes the foreground window at hotkey press; context detection
+extends that into a subscriber that maps focus info → profile:
+
+```
+focus info (process name, window class/title)
+        │
+        ▼
+  rule table:  code.exe        → Coding
+               discord.exe     → Casual
+               winword.exe     → Professional
+               outlook.exe     → Email
+               (user-editable, first match wins)
+        │
+        ▼
+  publish ProfileChanged { cause: ContextDetected }   (event bus)
+```
+
+Design constraints locked now so v1 doesn't paint us into a corner: profile switching is
+already atomic-between-utterances (above); the switch *cause* is modeled in the event
+(`Manual | ContextDetected`); manual selection always overrides detection for the current
+session; and window titles are matched, never stored (see privacy posture). Not in v1 —
+no implementation, no settings surface, only this contract.
+
 ### Storage (`od-storage`)
 - **SQLite** (rusqlite, bundled): dictation history (text + timing + latency metrics,
   optional encrypt-at-rest decided M7), dictionary terms, symbol tables. Repository
   pattern: `HistoryRepo`, `DictionaryRepo` traits over a connection pool.
 - **JSON settings** (serde): atomic write-temp-rename; no secrets ever stored here.
 - **TOML profiles**: shippable defaults (general/email/coding/meeting/professional/
-  medical/legal) + user profiles in the config dir. A profile = STT hints + processor
-  toggles/config + dictionary sets + symbol table + format pass.
+  medical/legal) + user profiles in the config dir. Full schema in "Profiles — the
+  configuration unit" above: STT hints, processor config, dictionary sets, symbol table,
+  format pass, cloud policy, future plugin config.
 
 ### UI (Tauri 2 + Svelte 5)
 Three surfaces: borderless always-on-top **overlay pill** (partial text + level meter +

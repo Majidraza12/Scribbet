@@ -119,3 +119,61 @@ verification to `%LOCALAPPDATA%/OpenDictate/models`.
 
 Compiled output, no VDOM runtime, smallest webview payload → fastest overlay/settings
 start, which protects the <2 s cold-start budget. User-confirmed choice over React/Solid.
+
+## ADR-16 · Cargo workspace with one crate per pipeline stage (not a single crate)
+
+**Context.** The pipeline has ~10 components with sharply different dependency
+footprints: `od-stt` pulls whisper.cpp (C++ build, long compile), `od-vad` pulls ONNX
+Runtime, `od-insertion` pulls windows-rs, while `od-cleanup`/`od-commands` are pure Rust
+with near-zero deps. A single crate would fuse all of that into one compilation unit.
+
+**Decision.** One workspace, one crate per stage, boundaries matching the trait seams
+(`SttEngine`, `TextProcessor`, `Rewriter`, `TextInserter`).
+
+**Why.**
+- *Build isolation*: editing a cleanup rule must not recompile whisper.cpp FFI. Iteration
+  speed on the pure-logic crates (where most of the test-driven work happens) stays in
+  seconds.
+- *Dependency hygiene*: `cargo tree -p od-cleanup` proves the cleanup chain has no ML or
+  network deps — the privacy claim in 06-security is auditable per crate, and a heavy
+  dep can't silently leak into a lean crate.
+- *Enforced layering*: crates can only use what they declare; a single crate lets any
+  module reach any other. The trait seams stay real because the compiler polices them.
+- *Portability triage*: CI tests the portable crates (`cleanup`, `commands`, `rewrite`,
+  `storage`, `core-types`) on Linux today; platform crates (`insertion`, `audio` backends)
+  are cleanly quarantined for the cross-platform phase.
+- *Feature gating*: cargo features for cloud rewriters (ADR-7) attach to `od-rewrite`
+  alone instead of threading through a monolith.
+
+**Consequences.** More `Cargo.toml` ceremony; shared types must live in `od-core-types`
+(a deliberate chokepoint — churn there is a design smell we want to feel). Workspace
+`[workspace.dependencies]` keeps versions pinned once.
+
+## ADR-17 · Windows-first, cross-platform by trait seam (not simultaneous multi-OS)
+
+**Context.** The end goal is cross-platform, but the OS-coupled surface — text insertion,
+global hotkeys, tray/overlay, credential storage — is where dictation apps live or die,
+and it cannot be abstracted well *before* one concrete implementation exists. The
+developer's machine and the underserved market (see 01-product-analysis) are both Windows.
+
+**Decision.** Ship v1 on Windows only. Every OS-coupled component is defined by a
+portable trait in a portable crate, with the Windows backend as the first implementation:
+`TextInserter` (UIA/SendInput/clipboard today; macOS AX API, Linux AT-SPI later),
+hotkey manager, capture backend (cpal already abstracts this), secret store (`keyring`
+already abstracts this).
+
+**Why this supports incremental porting rather than blocking it.**
+- The *portable core* (pipeline, cleanup, commands, storage, STT, VAD — the large
+  majority of the code) is kept provably OS-free by the workspace structure (ADR-16) and
+  the Linux CI job from day one. Porting = writing new backend crates, not refactoring.
+- Trait seams designed against one *real* backend beat speculative abstractions designed
+  against zero: the Windows quirk table will teach us what the insertion trait actually
+  needs (timing, focus semantics, tier fallback) before we freeze it for three OSes.
+- Milestones stay small and shippable; a simultaneous 3-OS build would triple the
+  M3/M4 surface (hotkeys, insertion) — the two hardest, most platform-specific
+  milestones — before any user value ships.
+
+**Consequences.** macOS/Linux users wait; some Windows assumptions may still leak through
+the seams and surface during porting (accepted — cheaper than speculative design). The
+Tauri/Svelte UI layer is cross-platform from day one, so porting cost is concentrated in
+`od-insertion` + hotkey/tray backends.

@@ -3,6 +3,56 @@
 Scope: OpenDictate desktop app, Windows-first, default (rules-only, offline) build.
 Method: asset → threat → mitigation, STRIDE-flavored, plus privacy posture.
 
+## Trust boundaries
+
+```
+                                        TB1: OS mic permission
+  ┌─ hardware ──────────┐                (user grant, OS indicator)
+  │  microphone         │══════════════════╗
+  └─────────────────────┘                  ▼
+┌─ OpenDictate process (user privilege, TRUSTED) ─────────────────────────────────────┐
+│                                                                                     │
+│   audio (RAM ring buffer only, never disk)                                          │
+│      └─► VAD ─► STT ─► cleanup chain ─► [rewriter?] ─► insertion engine             │
+│                            │                 ║               │                      │
+│              text          │                 ║ TB3           │ TB4: synthetic input │
+│              ▼             ▼                 ║ (opt-in       ▼ (UIA / SendInput /   │
+│   ┌─ webview (SEMI-TRUSTED) ─┐               ║  cloud)       │  clipboard swap)     │
+│   │ Svelte UI                │               ║               │                      │
+│   │ IPC allow-list only —    │               ║               │                      │
+│   │ no fs/shell/net APIs     │               ║               │                      │
+│   └───────────────────────── ┘               ║               │                      │
+│      TB2: Tauri capability boundary          ║               │                      │
+└──────────────┬───────────────────────────────╫───────────────┼──────────────────────┘
+               │ TB5: disk                     ║               ▼
+               ▼                               ║        ┌─ target application ─┐
+   ┌─ user profile on disk ─────────┐          ║        │ (UNTRUSTED — any     │
+   │ SQLite history (user-only ACL, ║          ║        │  focused window)     │
+   │   encrypt-at-rest: M7)         │          ║        └──────────────────────┘
+   │ settings JSON (no secrets)     │          ║        receives final text only;
+   │ TOML profiles (untrusted if    │          ║        never audio, never history
+   │   imported — T6)               │          ▼
+   │ Credential Manager (API keys)  │   ┌─ cloud rewriter API (UNTRUSTED) ─┐
+   └────────────────────────────────┘   │ EXISTS ONLY in cloud-feature     │
+                                        │ builds + runtime opt-in +        │
+   ═══ audio/text crossing a boundary   │ per-profile allow (cloud policy).│
+   ─── control/data inside a boundary   │ Receives cleaned TEXT of one     │
+                                        │ segment; never audio, never      │
+                                        │ context, key from Cred. Manager. │
+                                        └──────────────────────────────────┘
+```
+
+| Boundary | Crossing | Control |
+|---|---|---|
+| TB1 mic → process | raw audio | OS permission, session controller owns stream, indicator honesty (T1) |
+| TB2 core → webview | display text, state events | Tauri capability allow-list; webview has no fs/shell/net |
+| TB3 process → cloud | cleaned text of one segment | compile-time feature + runtime opt-in + per-profile `cloud.rewriter_allowed` (T2) |
+| TB4 process → target app | final text via synthetic input | focus captured at hotkey press only; no background typing (T8) |
+| TB5 process → disk | history/settings/profiles | user-only ACL, no secrets in files, keys in Credential Manager (T3/T5) |
+
+Default build: TB3 does not exist (no network code compiled). Every other boundary is
+local to the user account.
+
 ## Assets
 
 1. **Live microphone audio** — the most sensitive asset; may contain anything.

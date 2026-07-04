@@ -64,6 +64,47 @@ quality.
 | First-use delay | model download/load on first dictation | download at onboarding; lazy mmap load on hotkey |
 | Insertion failures in odd apps | single insertion strategy | 3-tier fallback + per-app quirk table |
 
+## Non-Goals
+
+OpenDictate is a dictation utility, not a platform. Explicitly out of scope — both to
+protect the footprint budget and to keep the product legible:
+
+- **Not an AI assistant.** No question answering, no "ask your computer" mode, no agentic
+  actions beyond the fixed voice-command grammar. Speech in, text out.
+- **Not a meeting transcription platform.** No multi-speaker diarization, no call
+  recording, no meeting summaries, no calendar integration. The "meeting" profile formats
+  *your own* dictated notes; it does not transcribe other people.
+- **Not a chatbot or conversational UI.** No dialogue state, no follow-up turns, no
+  personality. The overlay pill shows transcription state, nothing else.
+- **Not a note-taking app.** History is a safety net (recover a lost insertion), not a
+  knowledge base. No editor, no sync, no organization features — target apps own the
+  documents.
+- **Not a general voice-control/accessibility suite.** Voice commands cover text editing
+  around the dictation flow; OS navigation, window management, and app launching belong
+  to Voice Access.
+- **Not a translation tool.** Language auto-detect transcribes in the spoken language;
+  cross-language translation is out of scope.
+- **Not a server or SDK.** One desktop process; no daemon API, no multi-user, no web
+  service. (Extensibility = traits, profiles, plugins — inside the app.)
+
+## MVP Success Criteria
+
+v1.0 ships when all of these hold on a mid-range laptop (4-core mobile CPU, no GPU):
+
+| Criterion | Measure | Target |
+|---|---|---|
+| Perceived latency | speech-end → final text inserted | ≤300 ms p50, ≤500 ms p95 |
+| Streaming feedback | speech → partial visible in overlay | ≤500 ms behind voice |
+| Cold start | process launch → hotkey live | ≤2 s |
+| Idle RAM | working set, 10-min idle soak | ≤120 MB target, 250 MB hard cap |
+| Idle CPU | 10-min idle soak average | ≤5% (≈0% expected) |
+| Offline | full dictation + commands + profiles with network disabled | 100% functional |
+| Universal insertion | manual matrix: Notepad, Word, Chrome, VS Code, Slack, Windows Terminal | text lands correctly in all 6 |
+| Voice commands | core set (new paragraph/line, delete previous sentence/word, undo, replace X with Y, select all, paste, stop) | ≥95% recognition on fixture set, zero false triggers on dictation fixtures |
+| Cleanup quality | golden-file suite (fillers, punctuation, casing, symbols, dictionary) | 100% of goldens pass |
+| Privacy | default build dependency/binary audit | zero network code paths |
+| Install size | installer + STT/VAD models | ≤150 MB total |
+
 ## Missing features in the category (our additions)
 
 - User-visible latency metrics (trust through transparency).

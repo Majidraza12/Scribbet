@@ -8,10 +8,11 @@ the next milestone starts. This file is updated at every milestone boundary.
 - [x] git init, `main` branch
 - [x] Cargo workspace, 10 crate stubs (`crates/*`), shared workspace deps
 - [x] CI skeleton (fmt, clippy `-D warnings`, tests; Windows + portable-crates Linux job)
-- [x] docs/01-product-analysis.md — category matrix, wedge
-- [x] docs/02-architecture.md — system diagram, component walkthrough, latency budget
-- [x] docs/03-tech-decisions.md — ADR-1…15
-- [x] docs/06-security.md — threat model T1–T8, privacy posture
+- [x] docs/01-product-analysis.md — category matrix, wedge, non-goals, MVP success criteria
+- [x] docs/02-architecture.md — system diagram, component walkthrough, event bus contract,
+      profile schema, context detection (future), latency budget
+- [x] docs/03-tech-decisions.md — ADR-1…17
+- [x] docs/06-security.md — trust boundaries TB1–TB5, threat model T1–T8, privacy posture
 - [x] ROADMAP.md (this file), README.md
 - [x] `cargo build` + `cargo test` + fmt + clippy green locally
 - [x] Initial commit
