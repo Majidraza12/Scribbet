@@ -134,6 +134,23 @@ pub enum AppEvent {
         /// Raw STT text (pre-cleanup; `cleaned` field joins in M5).
         raw: String,
     },
+    /// A final segment's text was delivered into the target application.
+    Inserted {
+        /// Segment that was inserted.
+        segment_id: SegmentId,
+        /// Delivery mechanism: `"uia"`, `"send_input"`, or `"clipboard"`.
+        tier: String,
+        /// Wall-clock insertion cost.
+        latency_ms: u64,
+    },
+    /// Insertion failed after all tiers; the text is preserved in the
+    /// overlay (and, from M7, history) so nothing is lost.
+    InsertFailed {
+        /// Segment whose insertion failed.
+        segment_id: SegmentId,
+        /// Human-readable cause.
+        error: String,
+    },
 }
 
 impl serde::Serialize for SegmentId {

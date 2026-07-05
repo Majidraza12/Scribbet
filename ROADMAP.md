@@ -68,13 +68,29 @@ the next milestone starts. This file is updated at every milestone boundary.
       presses against the running app
 - [ ] **REVIEW GATE 3** ← next stop
 
-## M4 — Universal insertion ☐
-- [ ] `od-insertion`: `TextInserter` trait
-- [ ] Tier 1 UIA TextPattern/ValuePattern · Tier 2 SendInput unicode · Tier 3
-      clipboard-paste-restore
-- [ ] Focus capture at hotkey press; per-app quirk table
-- [ ] Tests: automated harness window; manual matrix (Notepad, VS Code, Chrome, Word, Slack)
-- [ ] Review gate
+## M4 — Universal insertion ◐
+- [x] `od-insertion`: `TextInserter` trait + `NullInserter` (display-only) +
+      `WindowsInserter`
+- [x] Tier 1 UIA ValuePattern (empty-field fast path + editability/password
+      probe; caret-to-end after SetValue — I-5) · Tier 2 SendInput unicode
+      (newline→Return, surrogate pairs, modifier-remnant release) · Tier 3
+      clipboard swap → Ctrl+V → restore (retry-on-locked, non-text warned)
+- [x] Focus captured at hotkey press; re-verified at insert; follows user's
+      deliberate focus moves; password fields never transit the clipboard
+- [x] Per-app quirk table (terminals/RDP prefer clipboard tier, settle delays)
+- [x] Controller integration: finals inserted live during dictation;
+      `Inserted`/`InsertFailed` events; display-only fallback
+- [x] Tests: 3 CI-safe unit + 2 `#[ignore]`d harness tests against a real
+      EDIT window (exact 2-insert ordering incl. unicode/newline; clipboard
+      sentinel restore), with foreground guard (I-6). Live app run verified
+      focus capture + session cycle
+- [ ] Manual matrix by voice (Notepad, VS Code, Chrome, Word, Slack,
+      Windows Terminal) — needs the user's microphone; part of gate review
+- [ ] **REVIEW GATE 4** ← next stop
+
+Note: docs/02 listed an `Inserting` session state; insertion happens inline
+per-final on the controller thread (a few ms) so no separate state was
+needed — finals insert *during* Listening, which is the better UX anyway.
 
 ## M5 — Cleanup chain & profiles ☐
 - [ ] `od-cleanup`: `TextProcessor` trait + chain runner

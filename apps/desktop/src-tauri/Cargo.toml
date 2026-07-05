@@ -16,6 +16,7 @@ od-stt.workspace = true
 od-pipeline.workspace = true
 tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-global-shortcut = "2"
+od-insertion.workspace = true
 serde.workspace = true
 serde_json = { workspace = true }
 tracing.workspace = true

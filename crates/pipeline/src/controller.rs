@@ -18,6 +18,7 @@ use std::time::{Duration, Instant};
 
 use od_audio::{CaptureConfig, CaptureSession};
 use od_core_types::{AppEvent, PipelineCtx, Segment, SegmentKind, SessionState};
+use od_insertion::{FocusInfo, TextInserter};
 use od_stt::SttEngine;
 
 use crate::{EventBus, Transcriber, TranscriberConfig, TranscriberError};
@@ -83,15 +84,18 @@ impl SessionHandle {
 /// utterance). A failure is returned through the handle's bus as a log and
 /// the thread exits; callers that need construction errors synchronously
 /// should probe the model path first.
-pub fn spawn<E, F>(
+pub fn spawn<E, I, FE, FI>(
     capture: CaptureConfig,
     transcriber: TranscriberConfig,
     ctx: PipelineCtx,
-    make_engine: F,
+    make_engine: FE,
+    make_inserter: FI,
 ) -> SessionHandle
 where
     E: SttEngine + Send + 'static,
-    F: FnOnce() -> Result<E, od_stt::SttError> + Send + 'static,
+    I: TextInserter + 'static,
+    FE: FnOnce() -> Result<E, od_stt::SttError> + Send + 'static,
+    FI: FnOnce() -> Option<I> + Send + 'static,
 {
     let (tx, rx) = channel();
     let bus = Arc::new(EventBus::new());
@@ -116,9 +120,17 @@ where
                     return;
                 }
             };
+            // Constructed on this thread on purpose: the Windows backend
+            // holds apartment-threaded COM objects and is !Send.
+            let inserter = make_inserter();
+            if inserter.is_none() {
+                tracing::warn!("no text inserter; running display-only");
+            }
             Controller {
                 capture_config: capture,
                 transcriber: t,
+                inserter,
+                focus: None,
                 bus: thread_bus,
                 level_bits: thread_level,
                 commands: rx,
@@ -137,9 +149,13 @@ where
     }
 }
 
-struct Controller<E: SttEngine> {
+struct Controller<E: SttEngine, I: TextInserter> {
     capture_config: CaptureConfig,
     transcriber: Transcriber<E>,
+    /// Insertion backend; `None` = display-only (tests, missing platform).
+    inserter: Option<I>,
+    /// Target captured at session start (hotkey press).
+    focus: Option<FocusInfo>,
     bus: Arc<EventBus>,
     level_bits: Arc<AtomicU32>,
     commands: Receiver<SessionCommand>,
@@ -149,7 +165,7 @@ struct Controller<E: SttEngine> {
     chunk: Vec<f32>,
 }
 
-impl<E: SttEngine> Controller<E> {
+impl<E: SttEngine, I: TextInserter> Controller<E, I> {
     fn run(mut self) {
         tracing::info!("session controller ready");
         loop {
@@ -171,6 +187,21 @@ impl<E: SttEngine> Controller<E> {
     /// Returns false if shutdown was requested.
     fn listen(&mut self) -> bool {
         let t0 = Instant::now();
+        // Capture the insertion target FIRST: this is the window the user
+        // was in when they pressed the hotkey (docs/02 focus contract).
+        self.focus = self
+            .inserter
+            .as_mut()
+            .and_then(|ins| match ins.capture_focus() {
+                Ok(f) => {
+                    tracing::info!(app = %f.process, "insertion target captured");
+                    Some(f)
+                }
+                Err(e) => {
+                    tracing::warn!("focus capture failed ({e}); display-only session");
+                    None
+                }
+            });
         let (session, mut consumer) = match CaptureSession::start(&self.capture_config) {
             Ok(pair) => pair,
             Err(e) => {
@@ -279,7 +310,7 @@ impl<E: SttEngine> Controller<E> {
         Ok(in_speech)
     }
 
-    fn publish_segments(&self, segments: &[Segment]) {
+    fn publish_segments(&mut self, segments: &[Segment]) {
         for seg in segments {
             let event = match seg.kind {
                 SegmentKind::Partial => AppEvent::PartialUpdated {
@@ -296,6 +327,37 @@ impl<E: SttEngine> Controller<E> {
                 },
             };
             self.bus.publish(&event);
+            if seg.kind == SegmentKind::Final {
+                self.insert_final(seg);
+            }
+        }
+    }
+
+    /// Delivers a final segment into the captured target application.
+    /// A trailing space separates consecutive utterance segments; smarter
+    /// joining (no space before punctuation, paragraph breaks) is the M5
+    /// cleanup chain's job.
+    fn insert_final(&mut self, seg: &Segment) {
+        let (Some(inserter), Some(focus)) = (self.inserter.as_mut(), self.focus.as_ref()) else {
+            return;
+        };
+        if seg.text.is_empty() {
+            return;
+        }
+        let text = format!("{} ", seg.text);
+        match inserter.insert(&text, focus) {
+            Ok(outcome) => self.bus.publish(&AppEvent::Inserted {
+                segment_id: seg.id,
+                tier: outcome.tier.as_str().to_owned(),
+                latency_ms: outcome.duration.as_millis() as u64,
+            }),
+            Err(e) => {
+                tracing::error!("insertion failed: {e}");
+                self.bus.publish(&AppEvent::InsertFailed {
+                    segment_id: seg.id,
+                    error: e.to_string(),
+                });
+            }
         }
     }
 

@@ -69,6 +69,13 @@ idle. Watch item (not yet P1): idle RAM is 9 MB over the 120 MB aim in a debug
 build with the model eagerly resident — re-measure on a release build at M8
 before deciding whether lazy/mmap model residency work is needed.
 
+M4 additions (insertion, harness-measured on real windows): UIA ValuePattern
+tier ~0.9–2.4 ms per segment; SendInput tier ~1.7–4.4 ms for a ~25-char
+segment; both far inside the budget (docs/02 allots 5–30 ms). Live app run:
+hotkey→listening 32 ms with focus capture included. Clipboard tier cost is
+dominated by the deliberate 150–400 ms settle delay (quirk-configured) — only
+paid in terminal/RDP targets or as last resort.
+
 ## Issue log
 
 ### I-1 (M1) · Float phase accumulator made the resampler chunk-variant
@@ -120,6 +127,45 @@ before deciding whether lazy/mmap model residency work is needed.
   measurement lives in this log, not in parallel CI runs.
 - **Follow-up**: M9 soak/perf suite must pin serial execution for all
   latency measurements.
+
+### I-5 (M4) · UIA SetValue parks the caret at 0 → later text prepends
+
+- **Symptom**: harness test: two consecutive insertions came out as
+  `"Ünïcode…Hello from OpenDictate."` — second utterance *before* the first.
+- **Root cause**: tier 1 (`ValuePattern::SetValue`) is WM_SETTEXT under the
+  hood; it fills the field but leaves the caret at position 0, so the next
+  utterance's SendInput events typed at the front.
+- **Why it happened**: SetValue looks atomic and self-contained; its caret
+  side effect only matters across *multiple* insertions in one session —
+  exactly what dictation does and single-shot testing misses.
+- **Why the fix is correct**: after a successful SetValue the inserter sends
+  Ctrl+End (caret to end of document — correct for both single-line and
+  multiline edits), so every later tier appends. Proven by the same harness
+  test now asserting exact two-insert ordering.
+- **Follow-up**: none for insertion; M6 voice-editing will manage the caret
+  through UIA ranges explicitly.
+
+### I-6 (M4) · Harness typed test strings into the developer's editor
+
+- **Symptom**: during a harness run, `insert #2` text appeared in the
+  developer's Cursor editor and its trailing newline submitted a chat
+  message.
+- **Root cause**: Windows denies `SetForegroundWindow` to background
+  processes (foreground lock); the harness window never became foreground,
+  and the inserter — following its by-design "follow the user's current
+  focus" rule — typed into the real foreground app.
+- **Why it happened**: the test assumed activation always succeeds; the
+  first run happened to win the race, hiding the hazard.
+- **Why the fix is correct**: the harness now (1) nudges the foreground lock
+  (synthetic Alt tap) and retries activation, (2) *verifies*
+  `GetForegroundWindow() == harness window` and skips the test entirely
+  otherwise, and (3) asserts the captured focus process is the test binary
+  before any insertion. A test that cannot own the foreground now refuses to
+  type anywhere. Product behavior is unchanged — following the user's caret
+  is the intended dictation semantic (docs/02); the hazard was purely in the
+  test rig.
+- **Follow-up**: any future example/demo binaries that insert must use the
+  same guard pattern; noted for the M9 e2e suite.
 
 ### I-4 (M2) · Fixture pauses are longer than scripted
 

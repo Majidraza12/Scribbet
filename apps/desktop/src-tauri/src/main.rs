@@ -64,6 +64,13 @@ fn main() {
                     ..PipelineCtx::default()
                 },
                 || WhisperEngine::new(WhisperConfig::default()),
+                || match od_insertion::WindowsInserter::new() {
+                    Ok(inserter) => Some(inserter),
+                    Err(e) => {
+                        tracing::error!("inserter init failed ({e}); display-only mode");
+                        None
+                    }
+                },
             );
             let events = session.subscribe();
             app.manage(AppState { session });
