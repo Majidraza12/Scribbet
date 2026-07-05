@@ -7,3 +7,12 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+od-core-types.workspace = true
+od-vad.workspace = true
+od-stt.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+# WAV loading for the fixture-driven end-to-end test.
+hound = "3"

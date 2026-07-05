@@ -30,17 +30,25 @@ the next milestone starts. This file is updated at every milestone boundary.
       WAV round-trip) + `#[ignore]`d live-mic smoke + `record_wav` example
 - [x] Live verification: 2 s capture from real device, 48 kHz stereo → 16 kHz
       mono, 0 overruns
-- [ ] **REVIEW GATE 1** ← next stop
+- [x] **REVIEW GATE 1** — passed 2026-07-04
 
-## M2 — Streaming transcription ☐
-- [ ] `od-vad`: Silero v5 via `ort`; SpeechStart/SpeechEnd + hangover config
-- [ ] `od-stt`: `SttEngine` trait; whisper.cpp backend (`whisper-rs`), base.en Q5
-- [ ] Sliding-window incremental decode + local-agreement partials
-- [ ] `od-core-types`: Segment, SttEvent, PipelineCtx finalized
-- [ ] Segmenter (partial/final sentence bounds) in `od-pipeline`
-- [ ] Model download-with-checksum helper (dev-time; user-facing flow lands M8)
-- [ ] Tests: fixture WAVs → expected transcripts; latency assertions; VAD gate tests
-- [ ] Review gate
+## M2 — Streaming transcription ◐
+- [x] `od-vad`: Silero v5 via `ort` (model embedded, 2.3 MB); `VadGate` state
+      machine: hysteresis, min-speech blip filter, hangover; sample-offset events
+- [x] `od-stt`: `SttEngine` trait; whisper.cpp backend (whisper-rs 0.16), base.en Q5
+- [x] Re-decode cadence (700 ms) + `LocalAgreement` word-boundary stable prefixes
+- [x] `od-core-types`: SegmentId/Segment/SttEvent/LanguageHint/VocabBias/PipelineCtx
+- [x] Segmenter (sentence splitting, id reservation partial→final) + `Transcriber`
+      (VAD-gated engine feeding, pre-roll, finalize-latency metric) in `od-pipeline`
+- [x] Models: scripts/fetch-models.ps1 (whisper, SHA-256 pinned); TTS fixture
+      generator scripts/gen-fixtures.ps1 + 4 committed fixtures
+- [x] Tests: 13 CI-safe unit (agreement/segmenter/core-types) + 5 VAD fixture tests
+      + 4 mock-engine transcriber tests + 3 `#[ignore]`d whisper e2e (all pass;
+      transcripts exact on all fixtures)
+- [ ] Perf note: finalize latency 1.2 s (full re-decode at SpeechEnd). Target is
+      300 ms — optimization (decode only un-decoded tail / reuse last partial)
+      scheduled with M9 perf work; tracked in whisper_e2e.rs comment
+- [ ] **REVIEW GATE 2** ← next stop
 
 ## M3 — Global hotkey + first UI ☐
 - [ ] Hotkey manager: RegisterHotKey toggle + LL-hook push-to-talk (lazy hook)

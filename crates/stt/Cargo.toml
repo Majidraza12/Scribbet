@@ -7,3 +7,12 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+od-core-types.workspace = true
+# whisper.cpp bindings (ADR-5). Builds the C++ library via cmake/MSVC.
+whisper-rs = "0.16"
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+# WAV loading for fixture-driven transcription tests.
+hound = "3"

@@ -7,3 +7,12 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+# ONNX Runtime bindings (ADR-4). Pinned exactly: 2.0 release candidates have
+# breaking API churn between rcs.
+ort = "=2.0.0-rc.10"
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+# WAV loading for fixture-driven gate tests.
+hound = "3"

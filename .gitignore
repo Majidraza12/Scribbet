@@ -15,7 +15,8 @@ apps/desktop/src-tauri/gen/
 *.gguf
 *.ggml
 *.onnx
-!crates/vad/testdata/*.onnx
+# Exception: Silero VAD (2.3 MB, MIT) is committed and embedded in the binary.
+!crates/vad/models/silero_vad.onnx
 
 # Editor / OS
 .vscode/
