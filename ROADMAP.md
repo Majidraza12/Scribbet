@@ -45,10 +45,11 @@ the next milestone starts. This file is updated at every milestone boundary.
 - [x] Tests: 13 CI-safe unit (agreement/segmenter/core-types) + 5 VAD fixture tests
       + 4 mock-engine transcriber tests + 3 `#[ignore]`d whisper e2e (all pass;
       transcripts exact on all fixtures)
-- [ ] Perf note: finalize latency 1.2 s (full re-decode at SpeechEnd). Target is
-      300 ms — optimization (decode only un-decoded tail / reuse last partial)
-      scheduled with M9 perf work; tracked in whisper_e2e.rs comment
-- [ ] **REVIEW GATE 2** ← next stop
+- [x] Perf: finalize latency 1.2 s logged as **P1-1** in docs/04-engineering-log.md
+      with acceptance criteria (≤300 ms p50 on fixtures); blocks v1, not M3
+- [x] **REVIEW GATE 2** — passed 2026-07-04 (with engineering refinements:
+      per-milestone perf baselines, P1 tracking, issue log, hot-path rules —
+      see docs/04-engineering-log.md)
 
 ## M3 — Global hotkey + first UI ☐
 - [ ] Hotkey manager: RegisterHotKey toggle + LL-hook push-to-talk (lazy hook)
@@ -106,6 +107,8 @@ the next milestone starts. This file is updated at every milestone boundary.
 - [ ] Review gate
 
 ## M10 — v1.0 release ☐
+- [ ] All P1 items in docs/04-engineering-log.md closed against their
+      acceptance criteria (P1-1: STT finalize ≤300 ms p50)
 - [ ] Perf validation vs all targets (cold start, latency, RAM, CPU)
 - [ ] User docs, README polish
 - [ ] Tag v1.0.0
