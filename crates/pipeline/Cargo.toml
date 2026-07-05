@@ -11,6 +11,7 @@ od-core-types.workspace = true
 od-audio.workspace = true
 od-vad.workspace = true
 od-stt.workspace = true
+od-cleanup.workspace = true
 od-insertion.workspace = true
 thiserror.workspace = true
 tracing.workspace = true

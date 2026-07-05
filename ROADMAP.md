@@ -66,7 +66,7 @@ the next milestone starts. This file is updated at every milestone boundary.
 - [x] Perf (docs/04 table): cold start 523 ms, hotkey→listening 51 ms,
       idle 0 % CPU / 129 MB WS (debug), live-verified via synthesized hotkey
       presses against the running app
-- [ ] **REVIEW GATE 3** ← next stop
+- [x] **REVIEW GATE 3** — passed 2026-07-04
 
 ## M4 — Universal insertion ◐
 - [x] `od-insertion`: `TextInserter` trait + `NullInserter` (display-only) +
@@ -85,23 +85,45 @@ the next milestone starts. This file is updated at every milestone boundary.
       sentinel restore), with foreground guard (I-6). Live app run verified
       focus capture + session cycle
 - [ ] Manual matrix by voice (Notepad, VS Code, Chrome, Word, Slack,
-      Windows Terminal) — needs the user's microphone; part of gate review
-- [ ] **REVIEW GATE 4** ← next stop
+      Windows Terminal) — needs the user's microphone; **deferred by user
+      decision 2026-07-05 to run alongside M5+; still owed before M8**
+- [x] **REVIEW GATE 4** — automated review passed 2026-07-05 (tests,
+      perf table, engineering log); manual voice matrix outstanding, above
 
 Note: docs/02 listed an `Inserting` session state; insertion happens inline
 per-final on the controller thread (a few ms) so no separate state was
 needed — finals insert *during* Listening, which is the better UX anyway.
 
-## M5 — Cleanup chain & profiles ☐
-- [ ] `od-cleanup`: `TextProcessor` trait + chain runner
-- [ ] Processors 1–9 (whitespace, fillers, dictionary, symbols, punctuation,
-      segmentation, capitalization, user rules, profile format)
-- [ ] `od-rewrite`: `Rewriter` trait + `RulesRewriter` passthrough (extension point only)
-- [ ] `od-storage`: dictionary repo (SQLite), TOML profile loader, JSON settings
-- [ ] Shipped profiles: general, email, coding, meeting, professional, medical, legal
-- [ ] STT vocab bias from dictionary; language auto-detect wiring
-- [ ] Tests: golden-file tables per processor + full chain; profile round-trip
-- [ ] Review gate
+## M5 — Cleanup chain & profiles ◐
+- [x] `od-cleanup`: `TextProcessor` trait + chain runner (built per profile,
+      one `cleanup` debug event per segment with `chain_us`)
+- [x] Processors 1–9 (whitespace, fillers, dictionary, symbols, punctuation,
+      segmentation, capitalization, user rules, profile format); position-aware
+      fillers ("I like it" survives), determiner guard for spoken punctuation
+      ("the period of time" survives), casing commands ("camel case foo bar")
+- [x] `od-rewrite`: `Rewriter` trait + `RulesRewriter` passthrough — extension
+      point only; deliberately *not* called by the controller (identity would
+      be pure overhead; wiring lands with the first real backend, post-v1)
+- [x] `od-storage`: dictionary repo (SQLite via rusqlite bundled, schema v1),
+      TOML profile loader (user dir shadows shipped; unknown keys rejected),
+      atomic JSON settings (temp-file + rename)
+- [x] Shipped profiles: general, email, coding, meeting, professional,
+      medical, legal (embedded TOML; medical/legal subscribe to dictionary
+      sets the user fills via the M7 editor)
+- [x] STT vocab bias from dictionary (bias toward *written* forms); language
+      wiring: profile `stt.language` = "auto" → `LanguageHint::Auto`
+- [x] Controller: finals run raw → chain → insertion; `FinalReady` now
+      carries `raw` + `cleaned`; overlay shows cleaned text
+- [x] Tests: golden-file tables per processor + full chain (33), storage (17),
+      rewrite (1); workspace total 108 CI-safe + 7 `#[ignore]`d
+- [x] Perf: chain 6.0 µs/segment (release, 7 active processors) — docs/04
+- [ ] Review gate ← next stop
+
+Note (M5 deviations): meeting profile emits plain "- " bullets — the docs/02
+"bullet timestamps" idea needs a wall clock, which would make processor 9
+impure/untestable; revisit at M7 with the history writer. `Inserting` note
+from M4 still applies: cleanup runs inline per-final on the controller
+thread (µs), no pipeline stage added.
 
 ## M6 — Voice commands ☐
 - [ ] `od-commands`: grammar + interpreter (new paragraph/line, delete previous

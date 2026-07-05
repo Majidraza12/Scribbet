@@ -76,6 +76,18 @@ hotkey→listening 32 ms with focus capture included. Clipboard tier cost is
 dominated by the deliberate 150–400 ms settle delay (quirk-configured) — only
 paid in terminal/RDP targets or as last resort.
 
+M5 additions (cleanup chain): **6.0 µs/segment** (release, default profile
+with one dictionary entry = 7 active processors, 108-char segment, 10k-run
+average via `chain_cost_measurement` — run with
+`cargo test -p od-cleanup --release chain_cost_measurement -- --ignored --nocapture`).
+Budget in docs/02 is <1 ms: three orders of magnitude of headroom. The chain
+runs inline per-final on the controller thread and emits one `cleanup` debug
+event with `chain_us` per segment (instrumentation convention holds). Profile
+resolve + SQLite dictionary load happen once at startup, not per segment;
+smoke run: cold start 578 ms debug (523 ms at M3 — the +55 ms is
+settings/profile/SQLite init, well inside the ≤2 s target); idle RAM/CPU
+re-measure on release build at M8 as planned.
+
 ## Issue log
 
 ### I-1 (M1) · Float phase accumulator made the resampler chunk-variant

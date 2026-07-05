@@ -1,0 +1,16 @@
+# Medical — subscribes to the "medical" dictionary set for terminology and
+# biases STT toward it. Populate the set via the dictionary editor (M7);
+# terms then feed both recognition and cleanup automatically.
+
+[profile]
+name = "Medical"
+
+[stt]
+language = "en"
+vocab_bias = ["dictionary:medical", "dictionary:user"]
+
+[dictionaries]
+sets = ["user", "medical"]
+
+[cloud]
+rewriter_allowed = false              # clinical text never leaves the machine

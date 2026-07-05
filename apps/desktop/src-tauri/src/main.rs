@@ -11,11 +11,13 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::path::PathBuf;
 use std::time::Instant;
 
 use od_audio::CaptureConfig;
-use od_core_types::{AppEvent, LanguageHint, PipelineCtx, SessionState};
+use od_core_types::{AppEvent, PipelineCtx, SessionState};
 use od_pipeline::{SessionCommand, SessionHandle, TranscriberConfig};
+use od_storage::{ProfileStore, SqliteDictionaryRepo, load_settings, resolve_profile};
 use od_stt::{WhisperConfig, WhisperEngine};
 use tauri::menu::{MenuBuilder, MenuItem};
 use tauri::tray::TrayIconBuilder;
@@ -51,6 +53,8 @@ fn main() {
         std::process::exit(2);
     }
 
+    let ctx = load_pipeline_ctx();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(move |app| {
@@ -59,10 +63,7 @@ fn main() {
             let session = od_pipeline::spawn(
                 CaptureConfig::default(),
                 TranscriberConfig::default(),
-                PipelineCtx {
-                    language: LanguageHint::Fixed("en".into()),
-                    ..PipelineCtx::default()
-                },
+                ctx,
                 || WhisperEngine::new(WhisperConfig::default()),
                 || match od_insertion::WindowsInserter::new() {
                     Ok(inserter) => Some(inserter),
@@ -98,6 +99,72 @@ fn main() {
                 }
             }
         });
+}
+
+/// `%APPDATA%\OpenDictate` — settings, profiles, and the dictionary DB
+/// (ADR-10). The STT model lives separately under `%LOCALAPPDATA%`.
+fn config_dir() -> PathBuf {
+    std::env::var_os("APPDATA")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("OpenDictate")
+}
+
+/// Loads settings → active profile → resolved pipeline context (M5).
+/// Any failure degrades to the shipped "general" profile with defaults —
+/// dictation must come up even if config files are broken; the causes are
+/// logged, never fatal.
+fn load_pipeline_ctx() -> PipelineCtx {
+    let dir = config_dir();
+    let settings = load_settings(&dir.join("settings.json")).unwrap_or_else(|e| {
+        tracing::error!("settings load failed ({e}); using defaults");
+        od_storage::Settings::default()
+    });
+    let repo = match SqliteDictionaryRepo::open(&dir.join("dictionary.db")) {
+        Ok(repo) => Some(repo),
+        Err(e) => {
+            tracing::error!("dictionary db open failed ({e}); no custom vocabulary");
+            None
+        }
+    };
+    let store = ProfileStore::new(dir.join("profiles"));
+    let profile = store
+        .load(&settings.active_profile)
+        .or_else(|e| {
+            tracing::error!(
+                profile = %settings.active_profile,
+                "profile load failed ({e}); falling back to general"
+            );
+            store.load("general")
+        })
+        .expect("shipped general profile parses");
+    let resolved = match &repo {
+        Some(repo) => resolve_profile(&profile, repo),
+        None => {
+            // No dictionary: resolve against an empty in-memory store so the
+            // rest of the profile still applies.
+            let empty = SqliteDictionaryRepo::open_in_memory().expect("in-memory sqlite");
+            resolve_profile(&profile, &empty)
+        }
+    };
+    match resolved {
+        Ok(ctx) => {
+            tracing::info!(
+                profile = %ctx.profile.name,
+                dict_entries = ctx.profile.entries.len(),
+                vocab_terms = ctx.vocab.terms.len(),
+                "profile resolved"
+            );
+            ctx
+        }
+        Err(e) => {
+            tracing::error!("profile resolve failed ({e}); using built-in defaults");
+            PipelineCtx {
+                language: od_core_types::LanguageHint::Fixed("en".into()),
+                ..PipelineCtx::default()
+            }
+        }
+    }
 }
 
 fn register_hotkeys(app: &tauri::AppHandle) -> tauri::Result<()> {

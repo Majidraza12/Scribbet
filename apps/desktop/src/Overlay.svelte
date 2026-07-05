@@ -14,7 +14,7 @@
         text: string;
         stable_len: number;
       }
-    | { type: "final_ready"; segment_id: number; raw: string };
+    | { type: "final_ready"; segment_id: number; raw: string; cleaned: string };
 
   let state = $state<"idle" | "listening" | "finalizing">("idle");
   let partial = $state("");
@@ -41,7 +41,8 @@
         partial = ev.text;
         break;
       case "final_ready":
-        finals = [...finals, ev.raw];
+        // Show what was actually inserted, not the raw STT text.
+        finals = [...finals, ev.cleaned.trim()];
         partial = "";
         break;
     }

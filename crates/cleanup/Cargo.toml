@@ -7,3 +7,6 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+od-core-types = { workspace = true }
+tracing = { workspace = true }
+regex = { workspace = true }

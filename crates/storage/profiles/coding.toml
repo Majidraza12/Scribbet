@@ -1,0 +1,24 @@
+# Coding — programming symbol table ("open brace" -> {, "arrow" -> ->),
+# casing commands ("camel case foo bar" -> fooBar), capitalization off
+# (code casing owns it), no spoken-punctuation guessing beyond the table.
+
+[profile]
+name = "Coding"
+
+[stt]
+language = "en"
+vocab_bias = ["dictionary:programming", "dictionary:user"]
+
+[cleanup]
+capitalization.enabled = false        # code casing owns this
+symbols.table = "programming"
+punctuation.ensure_terminal = false   # code lines don't end in periods
+
+[dictionaries]
+sets = ["user", "programming"]
+
+[format]
+casing_commands = true
+
+[cloud]
+rewriter_allowed = false              # hard deny, even if enabled globally

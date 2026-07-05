@@ -1,0 +1,12 @@
+# General dictation — the default profile. Standard cleanup chain, user
+# dictionary only, no profile-specific formatting.
+
+[profile]
+name = "General"
+
+[stt]
+language = "en"
+vocab_bias = ["dictionary:user"]
+
+[dictionaries]
+sets = ["user"]

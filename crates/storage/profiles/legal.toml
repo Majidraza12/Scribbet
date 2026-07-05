@@ -1,0 +1,16 @@
+# Legal — subscribes to the "legal" dictionary set for terminology and
+# biases STT toward it. Spoken punctuation stays on (dictating clauses),
+# and cloud rewriting is hard-denied.
+
+[profile]
+name = "Legal"
+
+[stt]
+language = "en"
+vocab_bias = ["dictionary:legal", "dictionary:user"]
+
+[dictionaries]
+sets = ["user", "legal"]
+
+[cloud]
+rewriter_allowed = false              # privileged text never leaves the machine

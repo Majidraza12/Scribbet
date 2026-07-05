@@ -17,6 +17,7 @@ use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
 use std::time::{Duration, Instant};
 
 use od_audio::{CaptureConfig, CaptureSession};
+use od_cleanup::Chain;
 use od_core_types::{AppEvent, PipelineCtx, Segment, SegmentKind, SessionState};
 use od_insertion::{FocusInfo, TextInserter};
 use od_stt::SttEngine;
@@ -113,7 +114,7 @@ where
                     return;
                 }
             };
-            let t = match Transcriber::new(&transcriber, engine, ctx) {
+            let t = match Transcriber::new(&transcriber, engine, ctx.clone()) {
                 Ok(t) => t,
                 Err(e) => {
                     tracing::error!("transcriber construction failed: {e}");
@@ -126,9 +127,17 @@ where
             if inserter.is_none() {
                 tracing::warn!("no text inserter; running display-only");
             }
+            let chain = Chain::from_ctx(&ctx);
+            tracing::info!(
+                profile = %ctx.profile.name,
+                processors = ?chain.names(),
+                "cleanup chain ready"
+            );
             Controller {
                 capture_config: capture,
                 transcriber: t,
+                chain,
+                ctx,
                 inserter,
                 focus: None,
                 bus: thread_bus,
@@ -152,6 +161,11 @@ where
 struct Controller<E: SttEngine, I: TextInserter> {
     capture_config: CaptureConfig,
     transcriber: Transcriber<E>,
+    /// Cleanup chain built from the active profile (M5); finals pass
+    /// through it before insertion.
+    chain: Chain,
+    /// Active per-utterance context (profile snapshot, language, vocab).
+    ctx: PipelineCtx,
     /// Insertion backend; `None` = display-only (tests, missing platform).
     inserter: Option<I>,
     /// Target captured at session start (hotkey press).
@@ -279,7 +293,7 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
         if let Err(e) = self.transcriber.finish(&mut segments) {
             tracing::error!("finalize failed: {e}");
         }
-        self.publish_segments(&segments);
+        self.publish_segments(&mut segments);
         self.segments = segments;
 
         session.stop();
@@ -294,7 +308,7 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
         self.segments.clear();
         let mut segments = std::mem::take(&mut self.segments);
         let result = self.transcriber.feed(samples, &mut segments);
-        self.publish_segments(&segments);
+        self.publish_segments(&mut segments);
         self.segments = segments;
         result?;
 
@@ -310,33 +324,39 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
         Ok(in_speech)
     }
 
-    fn publish_segments(&mut self, segments: &[Segment]) {
+    fn publish_segments(&mut self, segments: &mut [Segment]) {
         for seg in segments {
-            let event = match seg.kind {
-                SegmentKind::Partial => AppEvent::PartialUpdated {
-                    segment_id: seg.id,
-                    text: seg.text.clone(),
-                    // stable_len travels inside Segment in M5's cleanup work;
-                    // until then the overlay treats the whole partial as
-                    // provisional.
-                    stable_len: 0,
-                },
-                SegmentKind::Final => AppEvent::FinalReady {
-                    segment_id: seg.id,
-                    raw: seg.text.clone(),
-                },
-            };
-            self.bus.publish(&event);
-            if seg.kind == SegmentKind::Final {
-                self.insert_final(seg);
+            match seg.kind {
+                SegmentKind::Partial => {
+                    // Partials are display-only; they never pass through the
+                    // cleanup chain (stable_len refinement is a later
+                    // milestone — the overlay treats the whole partial as
+                    // provisional).
+                    self.bus.publish(&AppEvent::PartialUpdated {
+                        segment_id: seg.id,
+                        text: seg.text.clone(),
+                        stable_len: 0,
+                    });
+                }
+                SegmentKind::Final => {
+                    // Finals: raw STT text → cleanup chain → insertion.
+                    let raw = seg.text.clone();
+                    self.chain.run(seg, &self.ctx);
+                    self.bus.publish(&AppEvent::FinalReady {
+                        segment_id: seg.id,
+                        raw,
+                        cleaned: seg.text.clone(),
+                    });
+                    self.insert_final(seg);
+                }
             }
         }
     }
 
-    /// Delivers a final segment into the captured target application.
-    /// A trailing space separates consecutive utterance segments; smarter
-    /// joining (no space before punctuation, paragraph breaks) is the M5
-    /// cleanup chain's job.
+    /// Delivers a final (cleaned) segment into the captured target
+    /// application. A trailing space separates consecutive segments unless
+    /// the cleanup chain already ended the segment with layout whitespace
+    /// (email newlines, meeting bullets).
     fn insert_final(&mut self, seg: &Segment) {
         let (Some(inserter), Some(focus)) = (self.inserter.as_mut(), self.focus.as_ref()) else {
             return;
@@ -344,7 +364,11 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
         if seg.text.is_empty() {
             return;
         }
-        let text = format!("{} ", seg.text);
+        let text = if seg.text.ends_with(char::is_whitespace) {
+            seg.text.clone()
+        } else {
+            format!("{} ", seg.text)
+        };
         match inserter.insert(&text, focus) {
             Ok(outcome) => self.bus.publish(&AppEvent::Inserted {
                 segment_id: seg.id,

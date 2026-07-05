@@ -1,0 +1,15 @@
+# Email — general cleanup plus greeting/sign-off layout: a greeting-only
+# segment gets a blank line after it, a sign-off is set off on its own line.
+
+[profile]
+name = "Email"
+
+[stt]
+language = "en"
+vocab_bias = ["dictionary:user"]
+
+[dictionaries]
+sets = ["user"]
+
+[format]
+email_layout = true

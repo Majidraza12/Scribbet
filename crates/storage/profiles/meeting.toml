@@ -1,0 +1,14 @@
+# Meeting notes — every final segment becomes a "- " bullet.
+
+[profile]
+name = "Meeting"
+
+[stt]
+language = "en"
+vocab_bias = ["dictionary:user"]
+
+[dictionaries]
+sets = ["user"]
+
+[format]
+bullets = true

@@ -131,8 +131,10 @@ pub enum AppEvent {
     FinalReady {
         /// Segment identity.
         segment_id: SegmentId,
-        /// Raw STT text (pre-cleanup; `cleaned` field joins in M5).
+        /// Raw STT text (pre-cleanup), kept for history/debugging.
         raw: String,
+        /// Text after the cleanup chain — what insertion delivers.
+        cleaned: String,
     },
     /// A final segment's text was delivered into the target application.
     Inserted {
@@ -159,17 +161,184 @@ impl serde::Serialize for SegmentId {
     }
 }
 
+/// One dictionary replacement, resolved from storage into the active profile
+/// snapshot (docs/02 "Cleanup chain", processor 3).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct DictEntry {
+    /// The form STT tends to produce ("open dictate", "eye gore").
+    pub spoken: String,
+    /// The form the user wants inserted ("OpenDictate", "Igor").
+    pub written: String,
+    /// If true, `spoken` must match exactly; otherwise matching is
+    /// case-insensitive on whole-word boundaries.
+    pub case_sensitive: bool,
+}
+
+/// One user-defined regex → replacement rule (docs/02, processor 8).
+/// Rules apply in order; an invalid pattern is skipped with a warning at
+/// chain build time, never at segment time.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct UserRule {
+    /// Regex pattern (Rust `regex` syntax).
+    pub pattern: String,
+    /// Replacement text (`$1`-style capture references allowed).
+    pub replacement: String,
+}
+
+/// Filler-removal configuration (processor 2).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FillerConfig {
+    /// Master toggle.
+    pub enabled: bool,
+    /// Extra fillers on top of the built-in list (matched position-aware
+    /// like the built-ins).
+    pub extra: Vec<String>,
+}
+
+impl Default for FillerConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            extra: Vec::new(),
+        }
+    }
+}
+
+/// Spoken-symbol configuration (processor 4).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SymbolsConfig {
+    /// Master toggle.
+    pub enabled: bool,
+    /// Built-in table name ("general", "programming"); unknown names fall
+    /// back to "general" with a warning.
+    pub table: String,
+}
+
+impl Default for SymbolsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            table: "general".into(),
+        }
+    }
+}
+
+/// Punctuation-repair configuration (processor 5).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PunctuationConfig {
+    /// Master toggle.
+    pub enabled: bool,
+    /// Convert spoken punctuation words ("comma", "period", ...) into marks.
+    pub spoken: bool,
+    /// Append a period when a final segment ends without terminal
+    /// punctuation.
+    pub ensure_terminal: bool,
+}
+
+impl Default for PunctuationConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            spoken: true,
+            ensure_terminal: true,
+        }
+    }
+}
+
+/// Profile-format final pass configuration (processor 9). All off by
+/// default; shipped profiles opt in per context.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct FormatConfig {
+    /// Casing commands: "camel case foo bar" → `fooBar` (also snake/pascal/
+    /// kebab/screaming variants).
+    pub casing_commands: bool,
+    /// Email layout: line break after a greeting line, around sign-offs.
+    pub email_layout: bool,
+    /// Prefix each final segment with "- " (meeting notes).
+    pub bullets: bool,
+}
+
+/// Full cleanup-chain configuration; one per profile
+/// (docs/02 "Cleanup chain": processors 1–9 in order).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CleanupConfig {
+    /// Processor 1: whitespace normalization.
+    pub whitespace: bool,
+    /// Processor 2: filler removal.
+    pub fillers: FillerConfig,
+    /// Processor 3: dictionary replacements (entries come from the
+    /// snapshot's resolved [`DictEntry`] list).
+    pub dictionary: bool,
+    /// Processor 4: spoken symbols.
+    pub symbols: SymbolsConfig,
+    /// Processor 5: punctuation repair.
+    pub punctuation: PunctuationConfig,
+    /// Processor 6: sentence-boundary refinement.
+    pub segmentation: bool,
+    /// Processor 7: capitalization (sentence starts, standalone "i",
+    /// proper nouns). Coding profiles turn this off.
+    pub capitalization: bool,
+    /// Proper nouns for processor 7 (profile-supplied names).
+    pub proper_nouns: Vec<String>,
+    /// Processor 8: ordered user regex rules.
+    pub user_rules: Vec<UserRule>,
+    /// Processor 9: profile-specific final pass.
+    pub format: FormatConfig,
+}
+
+impl Default for CleanupConfig {
+    fn default() -> Self {
+        Self {
+            whitespace: true,
+            fillers: FillerConfig::default(),
+            dictionary: true,
+            symbols: SymbolsConfig::default(),
+            punctuation: PunctuationConfig::default(),
+            segmentation: true,
+            capitalization: true,
+            proper_nouns: Vec::new(),
+            user_rules: Vec::new(),
+            format: FormatConfig::default(),
+        }
+    }
+}
+
+/// The active profile, resolved into one immutable snapshot
+/// (docs/02 "Profiles — the configuration unit").
+///
+/// Built by `od-storage` from a TOML profile plus the dictionary database;
+/// swapped atomically between utterances, never mid-segment. STT-facing
+/// fields (language, vocab bias) live directly on [`PipelineCtx`] — the
+/// snapshot carries what the cleanup chain and rewriter consult.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ProfileSnapshot {
+    /// Display name ("General", "Coding", ...).
+    pub name: String,
+    /// Cleanup-chain configuration.
+    pub cleanup: CleanupConfig,
+    /// Dictionary set names this profile subscribes to (for UI display and
+    /// re-resolution when the dictionary changes).
+    pub dictionary_sets: Vec<String>,
+    /// Resolved dictionary entries from those sets (processor 3 input).
+    pub entries: Vec<DictEntry>,
+    /// Cloud policy: hard deny for any network rewriter when false, even if
+    /// one is enabled globally (docs/06 T2).
+    pub rewriter_allowed: bool,
+}
+
 /// Per-utterance context every pipeline stage can consult.
 ///
-/// M2 carries the STT-relevant fields; the active-profile snapshot (cleanup
-/// config, dictionaries, cloud policy) lands here in M5 — see
-/// docs/02-architecture.md "Profiles".
+/// M2 carried the STT-relevant fields; M5 adds the active-profile snapshot
+/// (cleanup config, dictionaries, cloud policy) — see docs/02-architecture.md
+/// "Profiles". The whole context is swapped atomically between utterances.
 #[derive(Clone, Debug, Default)]
 pub struct PipelineCtx {
     /// Language behavior for this utterance.
     pub language: LanguageHint,
     /// Vocabulary bias for this utterance.
     pub vocab: VocabBias,
+    /// Active profile snapshot.
+    pub profile: std::sync::Arc<ProfileSnapshot>,
 }
 
 #[cfg(test)]

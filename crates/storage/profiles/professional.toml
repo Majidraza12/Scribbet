@@ -1,0 +1,32 @@
+# Professional — general cleanup plus contraction-formalizing rules for
+# polished business writing.
+
+[profile]
+name = "Professional"
+
+[stt]
+language = "en"
+vocab_bias = ["dictionary:user"]
+
+[dictionaries]
+sets = ["user"]
+
+[[cleanup.rules]]
+pattern = "\\bgonna\\b"
+replacement = "going to"
+
+[[cleanup.rules]]
+pattern = "\\bwanna\\b"
+replacement = "want to"
+
+[[cleanup.rules]]
+pattern = "\\bgotta\\b"
+replacement = "have to"
+
+[[cleanup.rules]]
+pattern = "\\bkinda\\b"
+replacement = "somewhat"
+
+[[cleanup.rules]]
+pattern = "\\bsorta\\b"
+replacement = "somewhat"
