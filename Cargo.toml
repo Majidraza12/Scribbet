@@ -11,9 +11,8 @@ members = [
     "crates/insertion",
     "crates/pipeline",
     "crates/storage",
+    "apps/desktop/src-tauri",
 ]
-# apps/desktop (Tauri shell) joins the workspace at Milestone 3,
-# when the first UI surface (tray + overlay pill) is built.
 
 [workspace.package]
 version = "0.1.0"

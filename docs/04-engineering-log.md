@@ -52,20 +52,22 @@ user decision recorded in this file.)
 Numbers from the dev machine (4-core+ laptop-class CPU, no GPU assumed).
 "n/a" = the surface doesn't exist yet at that milestone.
 
-| Metric | M1 | M2 | Target (v1) |
-|---|---|---|---|
-| Cold start (process → hotkey live) | n/a | n/a | ≤ 2 s |
-| Idle RAM | n/a | n/a | ≤ 120 MB (250 hard) |
-| Idle CPU | n/a | n/a | ≤ 5 % |
-| STT partial cadence | n/a | 700 ms configured; decode cost not yet isolated | partial visible ≤ 500 ms behind voice |
-| STT finalize (speech-end → final) | n/a | ~1200 ms (P1-1) | ≤ 300 ms p50 |
-| Hotkey → listening | n/a | n/a | ≤ 100 ms (M3 sets baseline) |
-| Ring overruns during capture | 0 (2 s live capture) | 0 (all fixture runs) | 0 |
-| Transcript accuracy on fixtures | n/a | exact on all 4 fixtures | exact |
+| Metric | M1 | M2 | M3 | Target (v1) |
+|---|---|---|---|---|
+| Cold start (process → hotkey live) | n/a | n/a | **523 ms** (debug build, eager model load) | ≤ 2 s |
+| Idle RAM | n/a | n/a | **129 MB** WS (debug; whisper model resident ≈ 59 MB of that) | ≤ 120 MB (250 hard) |
+| Idle CPU | n/a | n/a | **0 %** over 10 s sample | ≤ 5 % |
+| STT partial cadence | n/a | 700 ms configured | unchanged | partial visible ≤ 500 ms behind voice |
+| STT finalize (speech-end → final) | n/a | ~1200 ms (P1-1) | unchanged (P1-1 open) | ≤ 300 ms p50 |
+| Hotkey → listening | n/a | n/a | **51 ms** (toggle → mic open + Listening published) | ≤ 100 ms |
+| Ring overruns during capture | 0 (2 s live) | 0 (fixtures) | 0 (live session) | 0 |
+| Transcript accuracy on fixtures | n/a | exact on 4/4 | unchanged | exact |
 
-M3 must add: cold start, hotkey→listening, idle RAM/CPU of the running app,
-UI event delivery sanity. Collection method: tracing fields + a documented
-manual procedure per milestone until M9 automates it in the soak suite.
+M3 collection method: `RUST_LOG=info` run of the debug app; `cold_start_ms` and
+`hotkey_to_listening_ms` tracing fields; `Get-Process` WS + CPU delta over 10 s
+idle. Watch item (not yet P1): idle RAM is 9 MB over the 120 MB aim in a debug
+build with the model eagerly resident — re-measure on a release build at M8
+before deciding whether lazy/mmap model residency work is needed.
 
 ## Issue log
 

@@ -28,3 +28,7 @@ Thumbs.db
 # Logs and local scratch
 *.log
 /scratch/
+
+# App run logs from local verification
+app-out.log
+app-err.log

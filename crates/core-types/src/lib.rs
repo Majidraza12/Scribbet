@@ -79,6 +79,69 @@ pub struct VocabBias {
     pub terms: Vec<String>,
 }
 
+/// Session lifecycle as shown to the user (tray icon, overlay state color).
+///
+/// `Inserting` joins in M4 when the insertion engine exists.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SessionState {
+    /// Mic closed, hotkeys armed.
+    Idle,
+    /// Capturing and transcribing.
+    Listening,
+    /// Hotkey released; draining the pipeline and finalizing open utterances.
+    Finalizing,
+}
+
+/// Domain events published on the app-wide event bus (docs/02-architecture.md
+/// "Event bus"). Events are *facts* (past tense), fire-and-forget; publishing
+/// never blocks a pipeline stage.
+///
+/// Times are milliseconds so events serialize cleanly over the UI bridge.
+/// Variants arrive with the milestone that emits them (`Inserted`,
+/// `CommandExecuted`, `Undo`, `ProfileChanged` are M4–M6).
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum AppEvent {
+    /// The session controller changed state.
+    StateChanged {
+        /// New state.
+        state: SessionState,
+    },
+    /// The VAD confirmed speech.
+    SpeechStarted {
+        /// Position in the capture stream, ms.
+        at_ms: u64,
+    },
+    /// The VAD confirmed the end of a speech run.
+    SpeechEnded {
+        /// Position in the capture stream, ms.
+        at_ms: u64,
+    },
+    /// A revised streaming hypothesis (overlay only; never inserted).
+    PartialUpdated {
+        /// Segment id this hypothesis will finalize into.
+        segment_id: SegmentId,
+        /// Full-utterance hypothesis.
+        text: String,
+        /// Stable-prefix byte length (char boundary of `text`).
+        stable_len: usize,
+    },
+    /// A final segment is ready for downstream stages.
+    FinalReady {
+        /// Segment identity.
+        segment_id: SegmentId,
+        /// Raw STT text (pre-cleanup; `cleaned` field joins in M5).
+        raw: String,
+    },
+}
+
+impl serde::Serialize for SegmentId {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_u64(self.0)
+    }
+}
+
 /// Per-utterance context every pipeline stage can consult.
 ///
 /// M2 carries the STT-relevant fields; the active-profile snapshot (cleanup

@@ -8,6 +8,7 @@ rust-version.workspace = true
 
 [dependencies]
 od-core-types.workspace = true
+od-audio.workspace = true
 od-vad.workspace = true
 od-stt.workspace = true
 thiserror.workspace = true

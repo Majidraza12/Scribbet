@@ -114,6 +114,16 @@ impl<E: SttEngine> Transcriber<E> {
         &self.engine
     }
 
+    /// Whether the VAD currently considers the stream inside speech.
+    pub fn in_speech(&self) -> bool {
+        self.gate.in_speech()
+    }
+
+    /// Samples fed so far, as milliseconds of stream time.
+    pub fn stream_position_ms(&self) -> u64 {
+        self.position * 1000 / u64::from(SAMPLE_RATE)
+    }
+
     /// Feeds a chunk of samples; produced segments (partials and finals) are
     /// appended to `out` in order.
     pub fn feed(

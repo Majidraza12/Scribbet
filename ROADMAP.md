@@ -51,14 +51,22 @@ the next milestone starts. This file is updated at every milestone boundary.
       per-milestone perf baselines, P1 tracking, issue log, hot-path rules —
       see docs/04-engineering-log.md)
 
-## M3 — Global hotkey + first UI ☐
-- [ ] Hotkey manager: RegisterHotKey toggle + LL-hook push-to-talk (lazy hook)
-- [ ] Session controller state machine (Idle/Arming/Listening/Finalizing/Inserting)
-- [ ] Tauri app joins workspace (`apps/desktop`): tray icon (capture indicator),
-      overlay pill (partials + level meter + state color)
-- [ ] Svelte 5 scaffold, event bridge Rust→UI
-- [ ] Cold-start budget check: hotkey live <2 s
-- [ ] Review gate
+## M3 — Global hotkey + first UI ◐
+- [x] Hotkeys via tauri-plugin-global-shortcut (Pressed/Released covers
+      push-to-talk without a raw LL hook): Ctrl+Shift+Space toggle,
+      Ctrl+Shift+D PTT (defaults; configurable M7)
+- [x] Session controller thread (`od-pipeline`): Idle (blocks, 0 CPU) /
+      Listening / Finalizing; single owner of the capture session (T1);
+      `Inserting` state joins in M4 as planned
+- [x] `EventBus` (bounded, drop-on-full broadcast) + `AppEvent` contract in
+      `od-core-types` (serde-tagged for the UI bridge)
+- [x] Tauri 2 app in workspace: tray (state tooltip, quit menu), transparent
+      always-on-top overlay pill (state dot, 12-bar level meter, stable/partial
+      text), Svelte 5 UI (37 KB built), event bridge thread, `get_level` poll
+- [x] Perf (docs/04 table): cold start 523 ms, hotkey→listening 51 ms,
+      idle 0 % CPU / 129 MB WS (debug), live-verified via synthesized hotkey
+      presses against the running app
+- [ ] **REVIEW GATE 3** ← next stop
 
 ## M4 — Universal insertion ☐
 - [ ] `od-insertion`: `TextInserter` trait
