@@ -14,6 +14,8 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod model;
+
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::Instant;
@@ -257,6 +259,24 @@ fn get_perf(state: tauri::State<'_, AppState>) -> Perf {
     state.perf.lock().expect("perf lock").clone()
 }
 
+#[tauri::command]
+fn model_status() -> model::ModelStatus {
+    model::status()
+}
+
+/// Kicks off the model download (onboarding). Progress arrives as
+/// `model-progress` events.
+#[tauri::command]
+fn model_download(app: AppHandle) {
+    model::spawn_download(app);
+}
+
+/// Relaunches the app after onboarding put the model in place.
+#[tauri::command]
+fn restart_app(app: AppHandle) {
+    app.restart();
+}
+
 /// Re-resolves the active profile against the (possibly changed) dictionary
 /// and hot-swaps the pipeline context.
 fn refresh_ctx(state: &tauri::State<'_, AppState>) -> Result<(), String> {
@@ -275,15 +295,15 @@ fn main() {
         )
         .init();
 
-    // Fail fast with a clear message when the STT model hasn't been fetched:
-    // a dictation app without its model is not degraded, it is inoperative.
-    let model_path = od_stt::default_model_path();
-    if !model_path.is_file() {
-        eprintln!(
-            "STT model missing at {}.\nRun scripts/fetch-models.ps1 first.",
-            model_path.display()
+    // Without the STT model the pipeline can't come up; instead of dying
+    // (pre-M8 behavior) the app opens the onboarding window, which downloads
+    // the model with a pinned checksum and restarts.
+    let model_present = od_stt::default_model_path().is_file();
+    if !model_present {
+        tracing::warn!(
+            "STT model missing at {}; starting onboarding",
+            od_stt::default_model_path().display()
         );
-        std::process::exit(2);
     }
 
     let dir = config_dir();
@@ -303,6 +323,12 @@ fn main() {
     let (hotkey_toggle, hotkey_ptt) = (settings.hotkey_toggle.clone(), settings.hotkey_ptt.clone());
 
     tauri::Builder::default()
+        // Must be the first plugin: a second launch hands off to the running
+        // instance (its settings window) instead of panicking on the
+        // already-registered global hotkey.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_settings(app);
+        }))
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(move |app| {
             // Pipeline first: the hotkey must be live even if the webview is
@@ -350,6 +376,10 @@ fn main() {
             spawn_event_bridge(app.handle().clone(), events);
             position_overlay(app.handle());
 
+            if !model_present {
+                show_onboarding(app.handle());
+            }
+
             let cold = t0.elapsed().as_millis() as u64;
             app.state::<AppState>()
                 .perf
@@ -373,6 +403,9 @@ fn main() {
             history_list,
             history_purge,
             get_perf,
+            model_status,
+            model_download,
+            restart_app,
         ])
         .on_window_event(|window, event| {
             // The settings window hides instead of closing: the app lives in
@@ -511,11 +544,49 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
+/// Settings and onboarding webviews are created on demand, not in
+/// tauri.conf: two idle WebView2 instances cost ~10 MB working set each,
+/// which is what stood between the release build and the ≤120 MB idle
+/// target (M9 soak).
 fn show_settings(app: &AppHandle) {
     if let Some(w) = app.get_webview_window("settings") {
         let _ = w.show();
         let _ = w.unminimize();
         let _ = w.set_focus();
+        return;
+    }
+    let built = tauri::WebviewWindowBuilder::new(
+        app,
+        "settings",
+        tauri::WebviewUrl::App("index.html".into()),
+    )
+    .title("OpenDictate Settings")
+    .inner_size(900.0, 640.0)
+    .min_inner_size(720.0, 480.0)
+    .center()
+    .build();
+    if let Err(e) = built {
+        tracing::error!("settings window creation failed: {e}");
+    }
+}
+
+fn show_onboarding(app: &AppHandle) {
+    let built = tauri::WebviewWindowBuilder::new(
+        app,
+        "onboarding",
+        tauri::WebviewUrl::App("index.html".into()),
+    )
+    .title("Welcome to OpenDictate")
+    .inner_size(560.0, 560.0)
+    .resizable(false)
+    .maximizable(false)
+    .center()
+    .build();
+    match built {
+        Ok(w) => {
+            let _ = w.set_focus();
+        }
+        Err(e) => tracing::error!("onboarding window creation failed: {e}"),
     }
 }
 

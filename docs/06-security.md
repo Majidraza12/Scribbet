@@ -142,4 +142,4 @@ local to the user account.
 | Text leaves device | Only if user enables a cloud rewriter, per profile, indicated. |
 | Content in logs | Never at default level. |
 | History | Local, capped, purgeable, opt-out; plaintext at rest by decision (ADR-18). |
-| Network in default build | Zero code paths (update check only if user enables it). |
+| Network in default build | One path: user-initiated model download in onboarding (pinned URL, pinned SHA-256, M8). No updater in v1 (ADR-19). |

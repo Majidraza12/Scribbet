@@ -17,12 +17,30 @@ od-pipeline.workspace = true
 od-storage.workspace = true
 tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-global-shortcut = "2"
+# Second launch = focus the running instance's settings window instead of a
+# hotkey-already-registered panic (found in M9 soak setup).
+tauri-plugin-single-instance = "2"
 od-insertion.workspace = true
 serde.workspace = true
 serde_json = { workspace = true }
 tracing.workspace = true
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# Model onboarding download (M8): the app's single deliberate network path
+# (pinned URL + pinned SHA-256, user-initiated; docs/06).
+ureq = "2"
+sha2 = "0.10"
 
 [[bin]]
 name = "opendictate-desktop"
 path = "src/main.rs"
+
+[dev-dependencies]
+# M9 end-to-end suite: synthetic audio -> pipeline -> real EDIT window.
+od-cleanup.workspace = true
+hound = "3"
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_System_LibraryLoader",
+] }

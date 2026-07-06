@@ -2,6 +2,6 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Overlay + settings windows: event listening and the app's own invoke commands only. No fs, shell, or network APIs are exposed to the webview (docs/06-security.md TB2).",
-  "windows": ["overlay", "settings"],
+  "windows": ["overlay", "settings", "onboarding"],
   "permissions": ["core:default"]
 }

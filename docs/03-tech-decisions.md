@@ -203,3 +203,29 @@ sensitive-ish store) would exist. The candidate was SQLCipher via
 (same as browser history and most editors' local state). If a passphrase-protected mode
 is ever requested, DPAPI-wrapped SQLCipher can be added behind a cargo feature without
 schema changes. Recorded in docs/06 §"Data at rest" (updated at M7).
+
+## ADR-19 · No auto-updater in v1; manual, checksummed releases (M8 decision)
+
+**Context.** The roadmap listed a "signed updater (opt-in check)". A real updater needs
+(a) a code-signing certificate, (b) a signed update manifest endpoint the app can poll,
+and (c) release hosting. None of these exist yet: the project has no certificate and no
+distribution infrastructure, and v1 is being built for the developer's own machine first.
+
+**Decision.** v1 ships without any updater code path. Releases are installers (MSI +
+NSIS, currently unsigned) with SHA-256 checksums published next to the artifacts.
+`tauri-plugin-updater` is the designated implementation when infrastructure exists; its
+signature-verified update flow matches the security posture (docs/06 T7).
+
+**Why.**
+- An *unsigned* auto-update channel is worse than none: it would teach the app to fetch
+  and run remote code without a trust root — exactly threat T7.
+- Shipping updater code "off by default" still adds a network code path to audit for no
+  user value until an endpoint exists.
+- The default build's network surface stays exactly one path: the user-initiated,
+  checksum-pinned model download (M8 onboarding).
+
+**Consequences.** Users update by installing a newer build over the old one (both MSI
+and NSIS support in-place upgrade; config in `%APPDATA%` is untouched). When a
+certificate + hosting exist: add `tauri-plugin-updater` behind the existing opt-in
+setting, sign both installers and the update manifest. Tracked as a post-v1 item in
+ROADMAP.

@@ -25,16 +25,6 @@
         "closable": false,
         "focus": false,
         "visible": false
-      },
-      {
-        "label": "settings",
-        "title": "OpenDictate Settings",
-        "width": 900,
-        "height": 640,
-        "minWidth": 720,
-        "minHeight": 480,
-        "visible": false,
-        "center": true
       }
     ],
     "security": {
@@ -42,7 +32,16 @@
     }
   },
   "bundle": {
-    "active": false,
-    "icon": ["icons/icon.ico", "icons/icon.png"]
+    "active": true,
+    "targets": ["msi", "nsis"],
+    "publisher": "OpenDictate",
+    "category": "Productivity",
+    "shortDescription": "Local-first dictation for Windows.",
+    "longDescription": "OpenDictate turns speech into text in any Windows app — fully on-device. No cloud, no account, no telemetry. Press a hotkey, talk, and clean text lands at your caret.",
+    "icon": ["icons/icon.ico", "icons/icon.png"],
+    "windows": {
+      "webviewInstallMode": { "type": "downloadBootstrapper" },
+      "nsis": { "installMode": "currentUser" }
+    }
   }
 }
