@@ -177,3 +177,29 @@ already abstracts this).
 the seams and surface during porting (accepted — cheaper than speculative design). The
 Tauri/Svelte UI layer is cross-platform from day one, so porting cost is concentrated in
 `od-insertion` + hotkey/tray backends.
+
+## ADR-18 · History/dictionary at rest: plain SQLite, no SQLCipher in v1 (M7 decision)
+
+**Context.** docs/06 deferred the encrypt-at-rest decision to M7, when history (the only
+sensitive-ish store) would exist. The candidate was SQLCipher via
+`rusqlite/bundled-sqlcipher`.
+
+**Decision.** Ship v1 with plain SQLite. Revisit only if the threat model changes.
+
+**Why.**
+- *No key to protect the data with.* OpenDictate has no passphrase and no login. Any key
+  would sit next to the database (file or DPAPI under the same user account), so SQLCipher
+  would only stop an attacker who can read `%APPDATA%` but somehow cannot read the key —
+  not a real boundary on a single-user Windows box. An attacker with the user's rights
+  reads the data either way; one without them is already stopped by NTFS ACLs.
+- *docs/06 threat model*: T3 (local malware with user rights) is explicitly out of scope
+  for at-rest crypto — such malware could just keylog or read the screen. No new threat is
+  mitigated, so the added dependency weight (OpenSSL build, larger binary, slower opens)
+  buys nothing measurable.
+- *User control is the honest mitigation*: history is opt-out, capped, and one-click
+  purgeable in the settings UI; nothing ever leaves the machine (TB1).
+
+**Consequences.** History and dictionary are readable by any process running as the user
+(same as browser history and most editors' local state). If a passphrase-protected mode
+is ever requested, DPAPI-wrapped SQLCipher can be added behind a cargo feature without
+schema changes. Recorded in docs/06 §"Data at rest" (updated at M7).

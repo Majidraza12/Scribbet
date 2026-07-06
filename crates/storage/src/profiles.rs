@@ -13,7 +13,7 @@ use od_core_types::{
     CleanupConfig, DictEntry, FillerConfig, FormatConfig, LanguageHint, PipelineCtx,
     ProfileSnapshot, PunctuationConfig, SymbolsConfig, UserRule, VocabBias,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{DictionaryRepo, StorageError};
 
@@ -59,6 +59,21 @@ impl ProfileStore {
             return Err(StorageError::UnknownProfile(id.to_owned()));
         };
         Ok(toml::from_str(&text)?)
+    }
+
+    /// Writes `p` as the user profile for `id` — the file that shadows the
+    /// shipped profile of the same id (M7 settings editor). Atomic
+    /// temp-file + rename, same contract as settings.
+    pub fn save_user(&self, id: &str, p: &ProfileToml) -> Result<PathBuf, StorageError> {
+        use std::io::Write;
+        std::fs::create_dir_all(&self.dir)?;
+        let text = toml::to_string_pretty(p)?;
+        let path = self.dir.join(format!("{id}.toml"));
+        let mut tmp = tempfile::NamedTempFile::new_in(&self.dir)?;
+        tmp.write_all(text.as_bytes())?;
+        tmp.flush()?;
+        tmp.persist(&path).map_err(|e| StorageError::Io(e.error))?;
+        Ok(path)
     }
 
     /// All available profile ids: shipped plus user files, deduplicated.
@@ -126,7 +141,7 @@ pub fn resolve_profile(
 }
 
 /// Root of the profile TOML schema (docs/02 "Profiles").
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProfileToml {
     /// `[profile]` identity.
@@ -147,12 +162,12 @@ pub struct ProfileToml {
     #[serde(default)]
     pub cloud: CloudSection,
     /// `[plugins]` — documented future surface; accepted and ignored.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub plugins: Option<toml::Table>,
 }
 
 /// `[profile]`.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProfileMeta {
     /// Display name.
@@ -160,7 +175,7 @@ pub struct ProfileMeta {
 }
 
 /// `[stt]`.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct SttSection {
     /// "auto" or an ISO 639-1 code.
@@ -179,7 +194,7 @@ impl Default for SttSection {
 }
 
 /// A bare `enabled` toggle table.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Toggle {
     /// Whether the processor runs.
@@ -193,7 +208,7 @@ impl Default for Toggle {
 }
 
 /// `[cleanup]` — every field optional, defaulting to the standard chain.
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct CleanupSection {
     /// Processor 1 toggle.
@@ -217,7 +232,7 @@ pub struct CleanupSection {
 }
 
 /// `[cleanup.fillers]`.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct FillersSection {
     /// Whether filler removal runs.
@@ -236,7 +251,7 @@ impl Default for FillersSection {
 }
 
 /// `[cleanup.symbols]`.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct SymbolsSection {
     /// Whether symbol replacement runs.
@@ -255,7 +270,7 @@ impl Default for SymbolsSection {
 }
 
 /// `[cleanup.punctuation]`.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct PunctuationSection {
     /// Whether punctuation repair runs.
@@ -277,7 +292,7 @@ impl Default for PunctuationSection {
 }
 
 /// One `[[cleanup.rules]]` entry.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RuleSection {
     /// Regex pattern.
@@ -287,7 +302,7 @@ pub struct RuleSection {
 }
 
 /// `[dictionaries]`.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct DictionariesSection {
     /// Dictionary sets this profile subscribes to.
@@ -303,7 +318,7 @@ impl Default for DictionariesSection {
 }
 
 /// `[format]`.
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct FormatSection {
     /// Casing commands ("camel case foo bar" → `fooBar`).
@@ -315,7 +330,7 @@ pub struct FormatSection {
 }
 
 /// `[cloud]`.
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct CloudSection {
     /// Hard deny for network rewriters when false (docs/06 T2). Default
@@ -428,6 +443,25 @@ mod tests {
             store.load("nope"),
             Err(StorageError::UnknownProfile(_))
         ));
+    }
+
+    #[test]
+    fn save_user_round_trips_and_shadows() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = ProfileStore::new(dir.path().to_path_buf());
+        // Load shipped coding profile, flip a toggle, save as user shadow.
+        let mut p = store.load("coding").unwrap();
+        p.cleanup.fillers.enabled = false;
+        p.cleanup.proper_nouns.push("Tauri".into());
+        store.save_user("coding", &p).unwrap();
+
+        let reloaded = store.load("coding").unwrap();
+        assert!(!reloaded.cleanup.fillers.enabled);
+        assert_eq!(reloaded.profile.name, "Coding");
+        assert!(reloaded.cleanup.proper_nouns.contains(&"Tauri".to_owned()));
+        // Serialized form still passes the strict (deny_unknown_fields) parse
+        // and resolves.
+        resolve_profile(&reloaded, &empty_repo()).unwrap();
     }
 
     #[test]

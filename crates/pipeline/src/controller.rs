@@ -25,7 +25,7 @@ use od_stt::SttEngine;
 use crate::{EventBus, Transcriber, TranscriberConfig, TranscriberError};
 
 /// Commands accepted by the controller.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub enum SessionCommand {
     /// Toggle listening (press-to-toggle hotkey).
     Toggle,
@@ -33,6 +33,12 @@ pub enum SessionCommand {
     PttPressed,
     /// Push-to-talk released: finalize and stop.
     PttReleased,
+    /// Swap the pipeline context (profile change from settings). Applies
+    /// immediately when idle; while listening it applies once the current
+    /// session ends — never mid-utterance (docs/02 profile contract).
+    UpdateCtx(PipelineCtx),
+    /// Use a different capture device from the next session on.
+    SetDevice(od_audio::DeviceSelector),
     /// Exit the controller thread (app shutdown).
     Shutdown,
 }
@@ -145,6 +151,7 @@ where
                 commands: rx,
                 segments: Vec::new(),
                 chunk: vec![0.0; CHUNK_SAMPLES],
+                finalize_seen: None,
             }
             .run();
         })
@@ -177,6 +184,8 @@ struct Controller<E: SttEngine, I: TextInserter> {
     segments: Vec<Segment>,
     /// Reusable ring-drain scratch.
     chunk: Vec<f32>,
+    /// Last finalize latency already published (dedup for the HUD event).
+    finalize_seen: Option<Duration>,
 }
 
 impl<E: SttEngine, I: TextInserter> Controller<E, I> {
@@ -191,10 +200,27 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
                     }
                 }
                 Ok(SessionCommand::PttReleased) => {} // stale release; ignore
+                Ok(SessionCommand::UpdateCtx(ctx)) => self.apply_ctx(ctx),
+                Ok(SessionCommand::SetDevice(dev)) => {
+                    tracing::info!(?dev, "capture device changed");
+                    self.capture_config.device = dev;
+                }
                 Ok(SessionCommand::Shutdown) | Err(_) => break,
             }
         }
         tracing::info!("session controller exiting");
+    }
+
+    /// Swaps profile/context: rebuilds the cleanup chain and points the
+    /// transcriber at the new snapshot (effective from the next utterance).
+    fn apply_ctx(&mut self, ctx: PipelineCtx) {
+        tracing::info!(profile = %ctx.profile.name, "pipeline context updated");
+        self.chain = Chain::from_ctx(&ctx);
+        self.transcriber.set_ctx(ctx.clone());
+        self.bus.publish(&AppEvent::ProfileChanged {
+            name: ctx.profile.name.clone(),
+        });
+        self.ctx = ctx;
     }
 
     /// One listening session: open mic → stream → finalize → close mic.
@@ -234,11 +260,16 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
 
         let mut was_in_speech = false;
         let mut shutdown = false;
+        // Context/device changes arriving mid-session apply after the
+        // session ends (never mid-utterance).
+        let mut pending_ctx: Option<PipelineCtx> = None;
         loop {
             // Commands take priority over audio.
             match self.commands.recv_timeout(LISTEN_POLL) {
                 Ok(SessionCommand::Toggle | SessionCommand::PttReleased) => break,
                 Ok(SessionCommand::PttPressed) => {} // already listening
+                Ok(SessionCommand::UpdateCtx(ctx)) => pending_ctx = Some(ctx),
+                Ok(SessionCommand::SetDevice(dev)) => self.capture_config.device = dev,
                 Ok(SessionCommand::Shutdown) => {
                     shutdown = true;
                     break;
@@ -295,10 +326,14 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
         }
         self.publish_segments(&mut segments);
         self.segments = segments;
+        self.publish_finalize_latency();
 
         session.stop();
         self.level_bits.store(0.0f32.to_bits(), Ordering::Relaxed);
         self.publish_state(SessionState::Idle);
+        if let Some(ctx) = pending_ctx {
+            self.apply_ctx(ctx);
+        }
         !shutdown
     }
 
@@ -311,6 +346,8 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
         self.publish_segments(&mut segments);
         self.segments = segments;
         result?;
+
+        self.publish_finalize_latency();
 
         let in_speech = self.transcriber.in_speech();
         if in_speech != was_in_speech {
@@ -382,6 +419,18 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
                     error: e.to_string(),
                 });
             }
+        }
+    }
+
+    /// Publishes [`AppEvent::UtteranceFinalized`] when the transcriber
+    /// reports a finalize run we haven't surfaced yet (latency HUD, M7).
+    fn publish_finalize_latency(&mut self) {
+        let latest = self.transcriber.last_finalize_latency();
+        if latest.is_some() && latest != self.finalize_seen {
+            self.finalize_seen = latest;
+            self.bus.publish(&AppEvent::UtteranceFinalized {
+                finalize_ms: latest.unwrap_or_default().as_millis() as u64,
+            });
         }
     }
 

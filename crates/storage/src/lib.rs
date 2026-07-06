@@ -9,10 +9,12 @@
 #![warn(missing_docs)]
 
 mod dictionary;
+mod history;
 mod profiles;
 mod settings;
 
 pub use dictionary::{DictionaryRepo, SqliteDictionaryRepo};
+pub use history::{HistoryEntry, HistoryRepo, SqliteHistoryRepo};
 pub use profiles::{ProfileStore, ProfileToml, resolve_profile, shipped_profile_ids};
 pub use settings::{Settings, load_settings, save_settings};
 
@@ -28,6 +30,9 @@ pub enum StorageError {
     /// Profile TOML failed to parse.
     #[error("profile parse error: {0}")]
     ProfileParse(#[from] toml::de::Error),
+    /// Profile failed to serialize back to TOML (settings editor writes).
+    #[error("profile serialize error: {0}")]
+    ProfileSerialize(#[from] toml::ser::Error),
     /// Settings JSON failed to parse.
     #[error("settings parse error: {0}")]
     SettingsParse(#[from] serde_json::Error),

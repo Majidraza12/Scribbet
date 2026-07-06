@@ -125,18 +125,33 @@ impure/untestable; revisit at M7 with the history writer. `Inserting` note
 from M4 still applies: cleanup runs inline per-final on the controller
 thread (µs), no pipeline stage added.
 
-## M6 — Voice commands ☐
-- [ ] `od-commands`: grammar + interpreter (new paragraph/line, delete previous
-      sentence/word, undo, replace X with Y, select all, paste, stop dictating)
-- [ ] Command executor: UIA/keystroke ops, insertion-span undo stack
-- [ ] Tests: grammar table tests, ambiguity cases ("I like undo buttons" ≠ command)
-- [ ] Review gate
+## M6 — Voice commands ⏸ (skipped by user decision, 2026-07-05)
+User reviewed the command set and chose pure transcription; the commands were judged
+not useful for their workflow. `od-commands` stays a scaffold crate; the docs/02
+interpreter design remains valid if this is ever revisited post-v1.
+- ⏸ `od-commands`: grammar + interpreter — parked
+- ⏸ Command executor + insertion-span undo stack — parked
 
-## M7 — Settings UI + history ☐
-- [ ] Settings window: profiles editor, dictionary CRUD, processor toggles,
-      mic selector, hotkey capture, latency HUD
-- [ ] History browser (app-inserted items), purge, caps
-- [ ] SQLCipher encrypt-at-rest decision (perf-test then default or setting)
+## M7 — Settings UI + history ◐
+- [x] Settings window (Tauri `settings` window, Svelte, routed on window label):
+      profile selector, cleanup processor toggles + format flags (saved as user
+      TOML shadow, hot-swapped into the live pipeline), dictionary CRUD ("user"
+      set, re-resolves vocab bias live), mic selector (device list, next-session
+      swap), hotkey capture (parse-validated re-registration; bad strings can
+      never leave the app hotkey-less), latency HUD (cold start, finalize,
+      insertion tier, counters)
+- [x] History: `od-storage::SqliteHistoryRepo` (same DB file as the dictionary,
+      own connection), written by the event bridge on `FinalReady`, browser tab
+      with filter/copy, purge button, enable toggle + cap in settings
+- [x] Pipeline: `SessionCommand::UpdateCtx`/`SetDevice` (applied idle or after
+      the current session — never mid-utterance), `AppEvent::UtteranceFinalized`
+      (HUD metric) + `AppEvent::ProfileChanged`
+- [x] SQLCipher decision: **no encryption in v1** — ADR-18 (docs/03); docs/06
+      updated. No passphrase exists, so a key would sit next to the DB; NTFS
+      ACLs + opt-out + purge are the honest mitigations.
+- [x] Tests: history repo (5), profile save/round-trip; workspace 115 CI-safe
+      green; clippy/fmt clean; app smoke run (profile resolve, hotkeys from
+      settings file, cold start 728 ms debug)
 - [ ] Review gate
 
 ## M8 — Packaging ☐

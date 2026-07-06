@@ -86,9 +86,10 @@ local to the user account.
 ### T3 · Dictation history theft (local attacker / other apps)
 - History DB lives in the per-user app-data dir (NTFS ACL = user-only by default).
 - History is opt-out entirely, size/age-capped, and one-click purge.
-- Encrypt-at-rest via SQLCipher: decision milestone M7 — default-on if perf cost is
-  negligible on target hardware; otherwise a setting. (Threat: offline disk access;
-  DPAPI-wrapped key so it's bound to the Windows user account.)
+- Encrypt-at-rest: decided at M7 — **plain SQLite, no SQLCipher in v1** (ADR-18,
+  docs/03). With no user passphrase, any key would live next to the database under the
+  same account, adding no boundary an attacker with user rights doesn't already cross.
+  Mitigations that do hold: NTFS ACLs, opt-out, cap, one-click purge.
 
 ### T4 · Clipboard abuse
 - Insertion tier 3 snapshots the clipboard, pastes, then restores the snapshot —
@@ -140,5 +141,5 @@ local to the user account.
 | Audio leaves device | Never. |
 | Text leaves device | Only if user enables a cloud rewriter, per profile, indicated. |
 | Content in logs | Never at default level. |
-| History | Local, capped, purgeable, opt-out; encryption decision at M7. |
+| History | Local, capped, purgeable, opt-out; plaintext at rest by decision (ADR-18). |
 | Network in default build | Zero code paths (update check only if user enables it). |

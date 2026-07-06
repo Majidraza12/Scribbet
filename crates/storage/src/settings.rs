@@ -16,6 +16,14 @@ pub struct Settings {
     pub active_profile: String,
     /// Capture device name; `None` = system default.
     pub input_device: Option<String>,
+    /// Toggle-dictation hotkey (tauri global-shortcut syntax).
+    pub hotkey_toggle: String,
+    /// Push-to-talk hotkey (tauri global-shortcut syntax).
+    pub hotkey_ptt: String,
+    /// Whether insertions are recorded to local history (M7).
+    pub history_enabled: bool,
+    /// Maximum history rows kept; oldest trimmed beyond this.
+    pub history_cap: u32,
 }
 
 impl Default for Settings {
@@ -23,6 +31,10 @@ impl Default for Settings {
         Self {
             active_profile: "general".into(),
             input_device: None,
+            hotkey_toggle: "ctrl+shift+space".into(),
+            hotkey_ptt: "ctrl+shift+d".into(),
+            history_enabled: true,
+            history_cap: 500,
         }
     }
 }

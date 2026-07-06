@@ -88,6 +88,17 @@ smoke run: cold start 578 ms debug (523 ms at M3 — the +55 ms is
 settings/profile/SQLite init, well inside the ≤2 s target); idle RAM/CPU
 re-measure on release build at M8 as planned.
 
+M7 additions (settings + history): cold start **728 ms** debug (578 ms at M5) —
+the +150 ms is the second (settings) webview window plus the history SQLite
+connection; still 2.7× inside the ≤2 s target, release re-measure stays
+scheduled for M8. History writes happen on the event-bridge thread (one INSERT
++ capped DELETE per final, off the controller thread — hot-path rules
+untouched). Profile/context hot-swap (`SessionCommand::UpdateCtx`) applies only
+while idle or between sessions, so no per-segment cost was added. New HUD
+surface: settings window polls `get_perf` at 1.5 s — no event-bus subscriber
+added, no pipeline instrumentation changed. M6 was skipped by user decision
+(2026-07-05, ROADMAP) — no perf surface.
+
 ## Issue log
 
 ### I-1 (M1) · Float phase accumulator made the resampler chunk-variant

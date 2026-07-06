@@ -153,6 +153,18 @@ pub enum AppEvent {
         /// Human-readable cause.
         error: String,
     },
+    /// An utterance finished decoding (speech end → finals ready). Feeds the
+    /// M7 latency HUD; the headline pipeline metric (P1-1).
+    UtteranceFinalized {
+        /// Wall-clock finalize cost.
+        finalize_ms: u64,
+    },
+    /// The active profile/context changed (settings UI); takes effect from
+    /// the next utterance.
+    ProfileChanged {
+        /// Display name of the new profile.
+        name: String,
+    },
 }
 
 impl serde::Serialize for SegmentId {

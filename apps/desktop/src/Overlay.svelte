@@ -16,7 +16,7 @@
       }
     | { type: "final_ready"; segment_id: number; raw: string; cleaned: string };
 
-  let state = $state<"idle" | "listening" | "finalizing">("idle");
+  let sessionState = $state<"idle" | "listening" | "finalizing">("idle");
   let partial = $state("");
   let finals = $state<string[]>([]);
   let level = $state(0);
@@ -28,7 +28,7 @@
   function onEvent(ev: AppEvent) {
     switch (ev.type) {
       case "state_changed":
-        state = ev.state;
+        sessionState = ev.state;
         if (ev.state === "listening") {
           partial = "";
           finals = [];
@@ -51,7 +51,7 @@
   onMount(() => {
     const unlisten = listen<AppEvent>("app-event", (e) => onEvent(e.payload));
     const poll = setInterval(async () => {
-      level = state === "listening" ? await invoke<number>("get_level") : 0;
+      level = sessionState === "listening" ? await invoke<number>("get_level") : 0;
     }, 66);
     return () => {
       clearInterval(poll);
@@ -65,11 +65,11 @@
   const lit = $derived(Math.round(Math.min(1, level * 6) * bars.length));
 </script>
 
-<div class="pill" class:listening={state === "listening"}>
+<div class="pill" class:listening={sessionState === "listening"}>
   <span
     class="dot"
-    class:live={state === "listening"}
-    class:busy={state === "finalizing"}
+    class:live={sessionState === "listening"}
+    class:busy={sessionState === "finalizing"}
   ></span>
   <div class="meter">
     {#each bars as b (b)}
@@ -81,9 +81,9 @@
       {#each finals as f, i (i)}<span class="final">{f} </span>{/each}{#if partial}<span
           class="partial">{partial}</span
         >{/if}
-    {:else if state === "listening"}
+    {:else if sessionState === "listening"}
       Listening…
-    {:else if state === "finalizing"}
+    {:else if sessionState === "finalizing"}
       Finishing…
     {:else}
       OpenDictate

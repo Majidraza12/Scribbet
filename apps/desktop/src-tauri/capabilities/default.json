@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Overlay window: event listening and the get_level command only. No fs, shell, or network APIs are exposed to the webview (docs/06-security.md TB2).",
-  "windows": ["overlay"],
+  "description": "Overlay + settings windows: event listening and the app's own invoke commands only. No fs, shell, or network APIs are exposed to the webview (docs/06-security.md TB2).",
+  "windows": ["overlay", "settings"],
   "permissions": ["core:default"]
 }
