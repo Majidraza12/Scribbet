@@ -10,3 +10,6 @@ rust-version.workspace = true
 od-core-types = { workspace = true }
 tracing = { workspace = true }
 regex = { workspace = true }
+
+[dev-dependencies]
+proptest.workspace = true

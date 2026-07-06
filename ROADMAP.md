@@ -154,17 +154,40 @@ interpreter design remains valid if this is ever revisited post-v1.
       settings file, cold start 728 ms debug)
 - [ ] Review gate
 
-## M8 — Packaging ☐
-- [ ] Tauri bundler: MSI + NSIS, signed
-- [ ] Onboarding: mic permission rationale, model download (checksum, resume)
-- [ ] Signed updater (opt-in check), release channel
+## M8 — Packaging ◐
+- [x] Tauri bundler: MSI + NSIS targets active (NSIS per-user install,
+      WebView2 download bootstrapper). **Unsigned** — code-signing needs a
+      certificate the project doesn't own yet; blocked on user, tracked below.
+- [x] Onboarding window (shown when the model is missing instead of the old
+      exit(2)): privacy/mic rationale, model download with resume (HTTP
+      Range → .part file), pinned SHA-256 verification before the file may
+      carry the model name, restart button. The app's only network code path
+      (docs/06 posture table updated).
+- [x] Updater: **not shipped in v1 by decision** — ADR-19 (docs/03). An
+      unsigned auto-update channel is worse than none (T7); manual installer
+      upgrades + published checksums until cert + hosting exist.
+- [ ] Code signing (blocked: requires purchasing a certificate — user
+      decision, can land post-v1 without code changes)
+- [ ] Manual voice matrix from M4 (needs user's microphone) — still owed
 - [ ] Review gate
 
-## M9 — Testing hardening ☐
-- [ ] E2E suite (synthetic audio → focused test app → assert inserted text)
-- [ ] Soak test: 10 min idle asserts RAM <120 MB target/<250 MB hard, CPU <5%
-- [ ] Fuzz: command grammar, cleanup chain, profile/TOML parsers
-- [ ] `cargo audit`/`cargo deny` in CI
+## M9 — Testing hardening ◐
+- [x] E2E suite (`apps/desktop/src-tauri/tests/e2e.rs`, `#[ignore]`d):
+      WAV fixture → VAD → whisper → segmenter → cleanup chain →
+      WindowsInserter → real EDIT window → read back. Both tests green with
+      the exact cleaned transcript. Safety hardened after I-7 (docs/04):
+      foreground re-verified before *every* insert.
+- [x] Soak test `scripts/soak-test.ps1` (10 min default, quick mode):
+      release run — RAM 123.6 MB max (target 120 soft / 250 hard, see
+      docs/04 note), CPU 0.00 % avg. Found I-8 (second-launch panic) →
+      fixed with tauri-plugin-single-instance.
+- [x] Fuzz-style property tests (proptest, CI-safe, 512 cases each):
+      cleanup chain total + tidy on arbitrary unicode, arbitrary user regex
+      rules never panic, chain accepts its own output; profile TOML /
+      settings JSON parsers total; parsed profiles always resolve.
+      (Command grammar fuzz n/a — M6 skipped.)
+- [x] Supply chain in CI: cargo-deny job (advisories, license allow-list,
+      source bans, wildcard bans) + `/deny.toml`.
 - [ ] Review gate
 
 ## M10 — v1.0 release ☐

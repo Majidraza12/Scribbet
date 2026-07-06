@@ -52,16 +52,24 @@ user decision recorded in this file.)
 Numbers from the dev machine (4-core+ laptop-class CPU, no GPU assumed).
 "n/a" = the surface doesn't exist yet at that milestone.
 
-| Metric | M1 | M2 | M3 | Target (v1) |
-|---|---|---|---|---|
-| Cold start (process → hotkey live) | n/a | n/a | **523 ms** (debug build, eager model load) | ≤ 2 s |
-| Idle RAM | n/a | n/a | **129 MB** WS (debug; whisper model resident ≈ 59 MB of that) | ≤ 120 MB (250 hard) |
-| Idle CPU | n/a | n/a | **0 %** over 10 s sample | ≤ 5 % |
-| STT partial cadence | n/a | 700 ms configured | unchanged | partial visible ≤ 500 ms behind voice |
-| STT finalize (speech-end → final) | n/a | ~1200 ms (P1-1) | unchanged (P1-1 open) | ≤ 300 ms p50 |
-| Hotkey → listening | n/a | n/a | **51 ms** (toggle → mic open + Listening published) | ≤ 100 ms |
-| Ring overruns during capture | 0 (2 s live) | 0 (fixtures) | 0 (live session) | 0 |
-| Transcript accuracy on fixtures | n/a | exact on 4/4 | unchanged | exact |
+| Metric | M1 | M2 | M3 | M8 (release) | Target (v1) |
+|---|---|---|---|---|---|
+| Cold start (process → hotkey live) | n/a | n/a | **523 ms** (debug build, eager model load) | **305 ms** | ≤ 2 s |
+| Idle RAM | n/a | n/a | **129 MB** WS (debug; whisper model resident ≈ 59 MB of that) | **123.6 MB** WS (see note) | ≤ 120 MB (250 hard) |
+| Idle CPU | n/a | n/a | **0 %** over 10 s sample | **0.00 %** avg over soak | ≤ 5 % |
+| STT partial cadence | n/a | 700 ms configured | unchanged | unchanged | partial visible ≤ 500 ms behind voice |
+| STT finalize (speech-end → final) | n/a | ~1200 ms (P1-1) | unchanged (P1-1 open) | unchanged (P1-1 → M10) | ≤ 300 ms p50 |
+| Hotkey → listening | n/a | n/a | **51 ms** (toggle → mic open + Listening published) | unchanged | ≤ 100 ms |
+| Ring overruns during capture | 0 (2 s live) | 0 (fixtures) | 0 (live session) | 0 | 0 |
+| Transcript accuracy on fixtures | n/a | exact on 4/4 | unchanged | exact (e2e, incl. cleaned insertion) | exact |
+
+M8 release measurements: `scripts/soak-test.ps1` against
+`target/release/opendictate-desktop.exe`. Idle RAM note: 123.6 MB is 3 % over
+the 120 MB soft target and 2× inside the 250 MB hard ceiling; ~59 MB of it is
+the eagerly resident whisper model — deliberate, because lazy loading would
+push model-load latency into the user's first utterance. Settings/onboarding
+webviews are created lazily (saved ~3 MB and two idle WebView2 processes).
+Accepted as the v1 number; recorded here so it can't silently drift.
 
 M3 collection method: `RUST_LOG=info` run of the debug app; `cold_start_ms` and
 `hotkey_to_listening_ms` tracing fields; `Get-Process` WS + CPU delta over 10 s
@@ -100,6 +108,43 @@ added, no pipeline instrumentation changed. M6 was skipped by user decision
 (2026-07-05, ROADMAP) — no perf surface.
 
 ## Issue log
+
+### I-7 (M9) · First e2e draft inserted mid-decode → text followed drifting focus
+
+- **Symptom**: new end-to-end tests reported an empty EDIT control although
+  every `insert` call returned Ok; landed text was nowhere to be seen.
+- **Root cause**: the draft inserted each final *while* whisper was still
+  decoding the rest of the fixture — seconds to minutes after the foreground
+  check. By insert time the foreground had drifted, and the inserter did what
+  it is designed to do (docs/02): follow the user's current focus.
+- **Why it happened**: the harness pattern (I-6) verifies the foreground once
+  before typing, which is safe only when typing follows immediately. Copying
+  the pattern into a test with long decode gaps silently broke its premise.
+- **Why the fix is correct**: the e2e now transcribes and cleans *everything
+  first* (no window on screen), then creates the window and re-verifies
+  foreground ownership + captured-process identity **before every insert**,
+  skipping (never typing) if either check fails. The gap between verification
+  and keystroke is back to milliseconds, and both tests pass with the exact
+  cleaned transcript read back from the EDIT control.
+- **Follow-up**: rule recorded here — any automated insertion must re-verify
+  foreground *immediately* before each insert, not once per test.
+
+### I-8 (M9) · Second app launch panicked: hotkey already registered
+
+- **Symptom**: soak-test setup launched the release build while a debug
+  instance was still alive; the new process panicked in the setup hook
+  (`HotKey already registered`) after the fallback registration also failed.
+- **Root cause**: global hotkeys are system-wide singletons; two instances
+  can never coexist, but nothing enforced single-instance semantics.
+- **Why it happened**: development always ran exactly one instance; the
+  collision needed a second launch to surface, which real users hit daily
+  (double-clicking the icon while the tray app is already running).
+- **Why the fix is correct**: `tauri-plugin-single-instance` (registered
+  first, before the shortcut plugin) hands the second launch off to the
+  running instance, which opens its settings window — the expected tray-app
+  behavior. The panic is unreachable because a second process never gets to
+  the setup hook.
+- **Follow-up**: none; covered by the plugin's own guarantees.
 
 ### I-1 (M1) · Float phase accumulator made the resampler chunk-variant
 

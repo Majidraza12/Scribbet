@@ -47,3 +47,14 @@ jobs:
           cargo test
           -p od-core-types -p od-cleanup -p od-rewrite
           -p od-commands -p od-storage
+
+  # Supply-chain gates (M9): RUSTSEC advisories, license allow-list, source
+  # and wildcard bans — config in /deny.toml.
+  supply-chain:
+    name: cargo-deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check advisories licenses bans sources

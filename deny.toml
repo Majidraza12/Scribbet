@@ -1,0 +1,43 @@
+# cargo-deny configuration (M9): supply-chain gates run in CI.
+# https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+targets = [
+    "x86_64-pc-windows-msvc",
+    "x86_64-unknown-linux-gnu",
+]
+
+[advisories]
+# Any RUSTSEC advisory (vulnerability, unmaintained, unsound, yanked) fails CI
+# by default in cargo-deny >= 0.15; nothing ignored yet. Add ignores here only
+# with a comment explaining why they don't apply.
+ignore = []
+
+[licenses]
+# Everything in the tree today is permissive. MPL-2.0 is file-level copyleft
+# (fine for unmodified dependency use); no GPL family in the allow list on
+# purpose — a GPL transitive dep should be a loud, deliberate decision.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "BSL-1.0",
+    "MPL-2.0",
+    "CDLA-Permissive-2.0",
+    "Unicode-3.0",
+    "Ubuntu-font-1.0",
+]
+
+[bans]
+# Duplicate versions are a size/compile-time smell, not an error (whisper/ort
+# pull long tails); highlight the worst offenders without failing the build.
+multiple-versions = "warn"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
