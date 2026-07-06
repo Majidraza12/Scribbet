@@ -191,12 +191,13 @@ interpreter design remains valid if this is ever revisited post-v1.
 - [ ] Review gate
 
 ## M10 — v1.0 release ◐
-- [◐] P1-1 (STT finalize ≤300 ms p50): investigated at M10 — the whisper.cpp
+- [x] P1-1 (STT finalize ≤300 ms p50): investigated at M10 — the whisper.cpp
       `audio_ctx` shortcut is unstable on base.en-q5_1 (data in docs/04);
       finalize cost is fixed encoder cost, so the target is unreachable with
-      this backend on CPU. **User decision needed**: accept ~1.0–1.2 s
-      finalize for v1 (partials already stream live) or gate v1 on the
-      post-v1 Moonshine streaming backend.
+      this backend on CPU. **Closed 2026-07-06 by user decision**: v1 ships
+      with ~1.0–1.2 s finalize (partials already stream live); ≤300 ms p50
+      re-scoped to the post-v1 Moonshine streaming backend (docs/04 closure
+      entry).
 - [x] Perf validation vs targets (release build, docs/04 M8 column): cold
       start 305 ms (target ≤2 s) · idle RAM 123.6 MB (120 soft/250 hard,
       accepted note) · idle CPU 0.00 % (≤5 %) · hotkey→listening 51 ms
@@ -204,8 +205,12 @@ interpreter design remains valid if this is ever revisited post-v1.
       Finalize acceptance run pending an idle machine (see docs/04 P1-1).
 - [x] User docs: README install/use/build sections; onboarding covers
       first-run (model download, privacy, hotkeys).
-- [ ] Manual voice matrix (M4 debt — needs the user's microphone)
-- [ ] Tag v1.0.0 (after the P1-1 decision above)
+- [ ] Manual voice matrix (M4 debt — needs the user's microphone).
+      **Known gap at tag time** (user decision 2026-07-06): trails the tag,
+      to be run when the user has mic time; automated e2e (real EDIT window,
+      exact cleaned transcripts) covers the insertion path meanwhile.
+- [x] Tag v1.0.0 — tagged 2026-07-06 with P1-1 closed, voice matrix and
+      code signing (M8) as documented known gaps.
 
 ## Post-v1 (parked, by design)
 - ⏸ `ClaudeRewriter` / `OpenAIRewriter` / `LocalLLMRewriter` (cargo features, per ADR-7)

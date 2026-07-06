@@ -2696,7 +2696,7 @@ dependencies = [
 
 [[package]]
 name = "od-audio"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "cpal",
  "hound",
@@ -2707,7 +2707,7 @@ dependencies = [
 
 [[package]]
 name = "od-cleanup"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "od-core-types",
  "proptest",
@@ -2717,18 +2717,18 @@ dependencies = [
 
 [[package]]
 name = "od-commands"
-version = "0.1.0"
+version = "1.0.0"
 
 [[package]]
 name = "od-core-types"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "od-insertion"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "thiserror 2.0.18",
  "tracing",
@@ -2737,7 +2737,7 @@ dependencies = [
 
 [[package]]
 name = "od-pipeline"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "hound",
  "od-audio",
@@ -2752,14 +2752,14 @@ dependencies = [
 
 [[package]]
 name = "od-rewrite"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "od-core-types",
 ]
 
 [[package]]
 name = "od-storage"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "od-core-types",
  "proptest",
@@ -2774,7 +2774,7 @@ dependencies = [
 
 [[package]]
 name = "od-stt"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "hound",
  "od-core-types",
@@ -2785,7 +2785,7 @@ dependencies = [
 
 [[package]]
 name = "od-vad"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "hound",
  "ort",
@@ -2801,7 +2801,7 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
 name = "opendictate-desktop"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "hound",
  "od-audio",

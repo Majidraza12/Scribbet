@@ -41,7 +41,7 @@ as a numeric field on exactly one event per unit of work.
 
 | # | Item | Current | Acceptance criteria | Tracked since |
 |---|---|---|---|---|
-| P1-1 | STT finalization latency: `end_utterance` re-decodes the whole utterance | ~1.2 s for a 2.3 s utterance (release, base.en Q5, 4 threads) | Speech-end → final text ≤ 300 ms p50 / ≤ 500 ms p95 on the fixture set, measured by `whisper_e2e` serial run on the dev machine. Candidate fix: at SpeechEnd decode only audio after the last cadence decode, splice with the stable prefix; fall back to full re-decode when agreement is empty. | M2 |
+| P1-1 | **CLOSED 2026-07-06 by user decision** (see closure entry below). STT finalization latency: `end_utterance` re-decodes the whole utterance | ~1.0–1.2 s (release, base.en Q5, 4 threads) — accepted for v1 | Original: ≤ 300 ms p50 / ≤ 500 ms p95 on the fixture set. Shown unreachable with full-window whisper.cpp on CPU (M10 investigation below); target re-scoped to the post-v1 Moonshine streaming backend. | M2 |
 
 (New P1 items get a row here; nothing may be silently dropped from this table
 — items leave it only by meeting their acceptance criteria or by an explicit
@@ -73,6 +73,16 @@ or (b) accepting ~1.0–1.2 s finalize for v1 (partials already stream live,
 so the user sees text within the cadence interval; the final merely commits
 it). Closing or re-scoping P1-1 is a user decision, pending.
 
+### P1-1 closure (2026-07-06): user accepted ~1.0–1.2 s finalize for v1
+
+User decision at the v1.0.0 gate: option (b) — ship v1 with ~1.0–1.2 s
+finalize. Rationale: partials stream live within the 700 ms cadence, so the
+final only commits already-visible text; the alternative (Moonshine backend)
+is a new-backend effort that would hold the release for a metric users mostly
+don't perceive. The ≤300 ms p50 target is re-scoped to the post-v1 Moonshine
+ONNX streaming backend (ADR-5 seam ready) and leaves this table per the
+explicit-decision rule above.
+
 Note on numbers: re-measurement during this investigation was contaminated —
 the dev machine was concurrently running a game plus Folding@home (baseline
 code measured 11.7 s vs its historical 1.2 s). Timing conclusions above rely
@@ -91,7 +101,7 @@ Numbers from the dev machine (4-core+ laptop-class CPU, no GPU assumed).
 | Idle RAM | n/a | n/a | **129 MB** WS (debug; whisper model resident ≈ 59 MB of that) | **123.6 MB** WS (see note) | ≤ 120 MB (250 hard) |
 | Idle CPU | n/a | n/a | **0 %** over 10 s sample | **0.00 %** avg over soak | ≤ 5 % |
 | STT partial cadence | n/a | 700 ms configured | unchanged | unchanged | partial visible ≤ 500 ms behind voice |
-| STT finalize (speech-end → final) | n/a | ~1200 ms (P1-1) | unchanged (P1-1 open) | unchanged (P1-1 → M10) | ≤ 300 ms p50 |
+| STT finalize (speech-end → final) | n/a | ~1200 ms (P1-1) | unchanged (P1-1 open) | unchanged (P1-1 → M10) | ~1.0–1.2 s accepted (P1-1 closed 2026-07-06; ≤300 ms re-scoped post-v1) |
 | Hotkey → listening | n/a | n/a | **51 ms** (toggle → mic open + Listening published) | unchanged | ≤ 100 ms |
 | Ring overruns during capture | 0 (2 s live) | 0 (fixtures) | 0 (live session) | 0 | 0 |
 | Transcript accuracy on fixtures | n/a | exact on 4/4 | unchanged | exact (e2e, incl. cleaned insertion) | exact |
