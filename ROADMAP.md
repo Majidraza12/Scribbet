@@ -190,12 +190,22 @@ interpreter design remains valid if this is ever revisited post-v1.
       source bans, wildcard bans) + `/deny.toml`.
 - [ ] Review gate
 
-## M10 — v1.0 release ☐
-- [ ] All P1 items in docs/04-engineering-log.md closed against their
-      acceptance criteria (P1-1: STT finalize ≤300 ms p50)
-- [ ] Perf validation vs all targets (cold start, latency, RAM, CPU)
-- [ ] User docs, README polish
-- [ ] Tag v1.0.0
+## M10 — v1.0 release ◐
+- [◐] P1-1 (STT finalize ≤300 ms p50): investigated at M10 — the whisper.cpp
+      `audio_ctx` shortcut is unstable on base.en-q5_1 (data in docs/04);
+      finalize cost is fixed encoder cost, so the target is unreachable with
+      this backend on CPU. **User decision needed**: accept ~1.0–1.2 s
+      finalize for v1 (partials already stream live) or gate v1 on the
+      post-v1 Moonshine streaming backend.
+- [x] Perf validation vs targets (release build, docs/04 M8 column): cold
+      start 305 ms (target ≤2 s) · idle RAM 123.6 MB (120 soft/250 hard,
+      accepted note) · idle CPU 0.00 % (≤5 %) · hotkey→listening 51 ms
+      (≤100 ms) · overruns 0 · fixture transcripts exact end-to-end.
+      Finalize acceptance run pending an idle machine (see docs/04 P1-1).
+- [x] User docs: README install/use/build sections; onboarding covers
+      first-run (model download, privacy, hotkeys).
+- [ ] Manual voice matrix (M4 debt — needs the user's microphone)
+- [ ] Tag v1.0.0 (after the P1-1 decision above)
 
 ## Post-v1 (parked, by design)
 - ⏸ `ClaudeRewriter` / `OpenAIRewriter` / `LocalLLMRewriter` (cargo features, per ADR-7)

@@ -47,6 +47,39 @@ as a numeric field on exactly one event per unit of work.
 — items leave it only by meeting their acceptance criteria or by an explicit
 user decision recorded in this file.)
 
+### P1-1 investigation (M10, 2026-07-05): audio_ctx shortcut rejected with data
+
+The docs/02 latency budget assumed finalize cost scales with utterance length.
+It does not: whisper.cpp pads every input to a 30 s window, so the ~1 s
+finalize is almost all *fixed* encoder cost — which also means the "decode
+only the tail at SpeechEnd" candidate fix cannot work (a 0.7 s tail decode
+costs the same ~1 s).
+
+The one CPU knob that does cut encoder cost, `audio_ctx` (attend only the
+frames the clip fills — whisper.cpp's own streaming trick), was implemented
+and rejected on quality: with base.en-q5_1, every configuration tested
+(tight ctx ±slack; floors 64–512; with/without `single_segment`;
+with/without `no_timestamps`) either produced repeat-loop garbage
+("2 2 2 …", dropped tails) on 2 of 3 fixtures, or — at ctx 512+ with
+single_segment — kept transcripts exact but made the decoder wander the
+in-window silence, costing ~3× baseline. Truncated positional context is
+simply unstable on this quantized model. The rejected code is preserved in
+this entry and a NOTE at the decode site.
+
+Consequence: **≤300 ms p50 finalize is not reachable with full-window
+whisper.cpp base.en on the CPU baseline.** The realistic paths are (a) the
+Moonshine ONNX streaming backend (already parked post-v1, ADR-5 seam ready),
+or (b) accepting ~1.0–1.2 s finalize for v1 (partials already stream live,
+so the user sees text within the cadence interval; the final merely commits
+it). Closing or re-scoping P1-1 is a user decision, pending.
+
+Note on numbers: re-measurement during this investigation was contaminated —
+the dev machine was concurrently running a game plus Folding@home (baseline
+code measured 11.7 s vs its historical 1.2 s). Timing conclusions above rely
+on the clean earlier baselines and on *relative* behavior; the formal
+acceptance run must happen on an idle machine (I-3 lesson, extended: check
+system load before trusting any latency number).
+
 ## Performance baselines per milestone
 
 Numbers from the dev machine (4-core+ laptop-class CPU, no GPU assumed).

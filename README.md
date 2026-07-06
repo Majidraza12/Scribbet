@@ -57,10 +57,14 @@ cargo test  --workspace
 
 - [Product analysis](docs/01-product-analysis.md) — category study and positioning
 - [Architecture](docs/02-architecture.md) — diagrams, component walkthrough, latency budget
-- [Tech decisions](docs/03-tech-decisions.md) — ADR-1…17
+- [Tech decisions](docs/03-tech-decisions.md) — ADR-1…19
 - [Security](docs/06-security.md) — threat model and privacy posture
 
 ## Status
 
-Pre-alpha: documentation and workspace scaffold (Deliverable 1). See
-[ROADMAP.md](ROADMAP.md) for the milestone plan.
+Release candidate. Milestones M1–M9 are complete (audio capture, streaming
+transcription, hotkeys + overlay, universal insertion, cleanup chain +
+profiles, settings UI + history, installers + onboarding, hardening); voice
+commands (M6) were cut by product decision. Remaining before v1.0 tag:
+finalize-latency acceptance (P1-1, see docs/04-engineering-log.md) and the
+manual by-voice application matrix. See [ROADMAP.md](ROADMAP.md).

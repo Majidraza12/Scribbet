@@ -126,6 +126,14 @@ impl WhisperEngine {
         }
 
         let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
+        // NOTE (P1-1): the whisper.cpp `audio_ctx` shortcut (attend only the
+        // frames the clip fills) was tried here and rejected with data: on
+        // base.en q5_1 a truncated positional context makes greedy decoding
+        // unstable — repeat loops ("2 2 2…"), dropped tails, and bimodal
+        // 0.4 s/17 s decode times — in every combination with
+        // single_segment/no_timestamps (docs/04, P1-1 entry). Full-window
+        // decodes are stable at ~1 s; the path to ≤300 ms is a streaming
+        // backend (Moonshine, post-v1), not this knob.
         params.set_n_threads(self.threads);
         params.set_print_special(false);
         params.set_print_progress(false);
