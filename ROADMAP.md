@@ -166,8 +166,10 @@ interpreter design remains valid if this is ever revisited post-v1.
 - [x] Updater: **not shipped in v1 by decision** — ADR-19 (docs/03). An
       unsigned auto-update channel is worse than none (T7); manual installer
       upgrades + published checksums until cert + hosting exist.
-- [ ] Code signing (blocked: requires purchasing a certificate — user
-      decision, can land post-v1 without code changes)
+- [x] Code signing: **dropped by user decision 2026-07-06** — app is
+      local-only, not distributed, so a certificate serves no purpose
+      (signing only suppresses SmartScreen warnings for third-party
+      downloads). Revisit only if distribution ever becomes a goal.
 - [ ] Manual voice matrix from M4 (needs user's microphone) — still owed
 - [ ] Review gate
 
@@ -209,8 +211,8 @@ interpreter design remains valid if this is ever revisited post-v1.
       **Known gap at tag time** (user decision 2026-07-06): trails the tag,
       to be run when the user has mic time; automated e2e (real EDIT window,
       exact cleaned transcripts) covers the insertion path meanwhile.
-- [x] Tag v1.0.0 — tagged 2026-07-06 with P1-1 closed, voice matrix and
-      code signing (M8) as documented known gaps.
+- [x] Tag v1.0.0 — tagged 2026-07-06 with P1-1 closed, voice matrix
+      trailing, and code signing dropped (local-only use — M8).
 
 ## Post-v1 (parked, by design)
 - ⏸ `ClaudeRewriter` / `OpenAIRewriter` / `LocalLLMRewriter` (cargo features, per ADR-7)
