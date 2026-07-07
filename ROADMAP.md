@@ -214,6 +214,19 @@ interpreter design remains valid if this is ever revisited post-v1.
 - [x] Tag v1.0.0 — tagged 2026-07-06 with P1-1 closed, voice matrix
       trailing, and code signing dropped (local-only use — M8).
 
+## v1.1 — GPU acceleration ☑ (2026-07-06)
+Trigger: first real daily use — 2–3 s perceived lag unusable for natural
+dictation; machine turned out to have an RTX 4060 the CPU-baseline
+assumption ignored.
+- [x] `od-stt/vulkan` → `opendictate-desktop/gpu-vulkan` features (ADR-20);
+      whisper on GPU, runtime CPU fallback keeps the binary universal
+- [x] Finalize 196 ms measured (was ~1200 ms) — **P1-1 target met**;
+      transcripts exact; idle RAM ~112 MB (model in VRAM)
+- [x] GPU builds: `decode_interval` 700 → 300 ms default (feature-gated)
+- [x] Build env: Vulkan SDK 1.4.350.0; `CARGO_TARGET_DIR=C:\odt`
+      (MSVC FileTracker MAX_PATH — docs/04 v1.1 note); CI stays CPU
+- [x] User-validated live ("actually working, impressed") incl. VS Code
+
 ## Post-v1 (parked, by design)
 - ⏸ `ClaudeRewriter` / `OpenAIRewriter` / `LocalLLMRewriter` (cargo features, per ADR-7)
 - ⏸ Moonshine ONNX streaming STT backend

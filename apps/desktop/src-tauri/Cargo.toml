@@ -30,6 +30,12 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 ureq = "2"
 sha2 = "0.10"
 
+[features]
+# GPU-accelerated STT (whisper.cpp Vulkan backend). Off by default: building
+# it needs the Vulkan SDK, which CI does not have. Runtime falls back to CPU
+# on machines without a Vulkan device, so a gpu build is safe to run anywhere.
+gpu-vulkan = ["od-stt/vulkan"]
+
 [[bin]]
 name = "opendictate-desktop"
 path = "src/main.rs"

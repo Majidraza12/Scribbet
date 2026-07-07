@@ -41,7 +41,7 @@ as a numeric field on exactly one event per unit of work.
 
 | # | Item | Current | Acceptance criteria | Tracked since |
 |---|---|---|---|---|
-| P1-1 | **CLOSED 2026-07-06 by user decision** (see closure entry below). STT finalization latency: `end_utterance` re-decodes the whole utterance | ~1.0–1.2 s (release, base.en Q5, 4 threads) — accepted for v1 | Original: ≤ 300 ms p50 / ≤ 500 ms p95 on the fixture set. Shown unreachable with full-window whisper.cpp on CPU (M10 investigation below); target re-scoped to the post-v1 Moonshine streaming backend. | M2 |
+| P1-1 | **MET 2026-07-06 on GPU builds** (see v1.1 entry below). STT finalization latency: `end_utterance` re-decodes the whole utterance | **196 ms** (release, `gpu-vulkan` build, RTX 4060) · ~1.0–1.2 s on CPU-only builds (accepted for CPU baseline) | ≤ 300 ms p50 / ≤ 500 ms p95 on the fixture set — met by the Vulkan backend; unreachable on CPU (M10 investigation below), where Moonshine remains the post-v1 path. | M2 |
 
 (New P1 items get a row here; nothing may be silently dropped from this table
 — items leave it only by meeting their acceptance criteria or by an explicit
@@ -83,6 +83,36 @@ don't perceive. The ≤300 ms p50 target is re-scoped to the post-v1 Moonshine
 ONNX streaming backend (ADR-5 seam ready) and leaves this table per the
 explicit-decision rule above.
 
+### P1-1 resolution (2026-07-06, v1.1): Vulkan GPU backend — target met
+
+Hours after the closure above, live use on the user's machine surfaced that
+2–3 s perceived lag makes natural dictation unusable. Investigation (idle
+16-thread machine, so not the I-3 contention trap) reconfirmed the fixed CPU
+encoder cost — and hardware inventory found an RTX 4060 the "CPU baseline"
+assumption had been ignoring.
+
+Fix: whisper-rs `vulkan` feature, exposed as `od-stt/vulkan` →
+`opendictate-desktop/gpu-vulkan` (ADR-20). No source changes to the decode
+path — `WhisperContextParameters::default()` enables GPU when the feature is
+compiled in, and ggml falls back to CPU at runtime when no Vulkan device
+exists, so the GPU binary is safe everywhere.
+
+Measured (whisper_e2e serial, RTX 4060): finalize **196 ms** vs ~1200 ms CPU
+— p50 target met with margin; transcripts stay exact on all fixtures. The
+cheap decodes also allowed `decode_interval` 700 ms → 300 ms on GPU builds
+(feature-conditional default in `WhisperConfig`), tightening partial-text
+tracking during continuous speech. Idle RAM dropped to ~112 MB WS (model
+weights now resident in VRAM), back under the 120 MB soft target.
+
+Build note: MSVC FileTracker hits MAX_PATH (FTK1011) on the Vulkan shader
+generator's nested paths under `C:\Coding V2\internal_tool\target`; GPU
+builds use `CARGO_TARGET_DIR=C:\odt`. Vulkan SDK 1.4.350.0 is a build-time
+dep only (CI stays CPU; runtime Vulkan comes from the GPU driver).
+
+Lesson (I-3 family): "CPU baseline" was a design assumption carried past the
+point where checking the actual deployment hardware would have paid for
+itself immediately.
+
 Note on numbers: re-measurement during this investigation was contaminated —
 the dev machine was concurrently running a game plus Folding@home (baseline
 code measured 11.7 s vs its historical 1.2 s). Timing conclusions above rely
@@ -95,16 +125,16 @@ system load before trusting any latency number).
 Numbers from the dev machine (4-core+ laptop-class CPU, no GPU assumed).
 "n/a" = the surface doesn't exist yet at that milestone.
 
-| Metric | M1 | M2 | M3 | M8 (release) | Target (v1) |
-|---|---|---|---|---|---|
-| Cold start (process → hotkey live) | n/a | n/a | **523 ms** (debug build, eager model load) | **305 ms** | ≤ 2 s |
-| Idle RAM | n/a | n/a | **129 MB** WS (debug; whisper model resident ≈ 59 MB of that) | **123.6 MB** WS (see note) | ≤ 120 MB (250 hard) |
-| Idle CPU | n/a | n/a | **0 %** over 10 s sample | **0.00 %** avg over soak | ≤ 5 % |
-| STT partial cadence | n/a | 700 ms configured | unchanged | unchanged | partial visible ≤ 500 ms behind voice |
-| STT finalize (speech-end → final) | n/a | ~1200 ms (P1-1) | unchanged (P1-1 open) | unchanged (P1-1 → M10) | ~1.0–1.2 s accepted (P1-1 closed 2026-07-06; ≤300 ms re-scoped post-v1) |
-| Hotkey → listening | n/a | n/a | **51 ms** (toggle → mic open + Listening published) | unchanged | ≤ 100 ms |
-| Ring overruns during capture | 0 (2 s live) | 0 (fixtures) | 0 (live session) | 0 | 0 |
-| Transcript accuracy on fixtures | n/a | exact on 4/4 | unchanged | exact (e2e, incl. cleaned insertion) | exact |
+| Metric | M1 | M2 | M3 | M8 (release) | v1.1 (gpu-vulkan, RTX 4060) | Target (v1) |
+|---|---|---|---|---|---|---|
+| Cold start (process → hotkey live) | n/a | n/a | **523 ms** (debug build, eager model load) | **305 ms** | **367 ms** | ≤ 2 s |
+| Idle RAM | n/a | n/a | **129 MB** WS (debug; whisper model resident ≈ 59 MB of that) | **123.6 MB** WS (see note) | **~112 MB** WS (model in VRAM) | ≤ 120 MB (250 hard) |
+| Idle CPU | n/a | n/a | **0 %** over 10 s sample | **0.00 %** avg over soak | 0 % | ≤ 5 % |
+| STT partial cadence | n/a | 700 ms configured | unchanged | unchanged | **300 ms** (feature-conditional default) | partial visible ≤ 500 ms behind voice |
+| STT finalize (speech-end → final) | n/a | ~1200 ms (P1-1) | unchanged (P1-1 open) | unchanged (P1-1 → M10) | **196 ms** (P1-1 target met) | ≤ 300 ms p50 (met on GPU; CPU builds accepted at ~1.0–1.2 s) |
+| Hotkey → listening | n/a | n/a | **51 ms** (toggle → mic open + Listening published) | unchanged | unchanged | ≤ 100 ms |
+| Ring overruns during capture | 0 (2 s live) | 0 (fixtures) | 0 (live session) | 0 | 0 | 0 |
+| Transcript accuracy on fixtures | n/a | exact on 4/4 | unchanged | exact (e2e, incl. cleaned insertion) | exact | exact |
 
 M8 release measurements: `scripts/soak-test.ps1` against
 `target/release/opendictate-desktop.exe`. Idle RAM note: 123.6 MB is 3 % over

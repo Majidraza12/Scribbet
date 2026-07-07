@@ -229,3 +229,29 @@ and NSIS support in-place upgrade; config in `%APPDATA%` is untouched). When a
 certificate + hosting exist: add `tauri-plugin-updater` behind the existing opt-in
 setting, sign both installers and the update manifest. Tracked as a post-v1 item in
 ROADMAP.
+
+## ADR-20 · GPU-accelerated STT via whisper.cpp Vulkan feature (v1.1 decision)
+
+**Context.** The v1 "CPU baseline, no GPU assumed" constraint put STT finalize at
+~1.0–1.2 s (fixed 30 s-window encoder cost; docs/04 P1-1) — accepted at the v1.0.0
+gate, then rejected in first real daily use: 2–3 s perceived lag breaks natural
+dictation. The deployment machine turned out to have an RTX 4060.
+
+**Decision.** Add a `vulkan` cargo feature to `od-stt` (forwarding to
+`whisper-rs/vulkan`), surfaced as `gpu-vulkan` on the desktop app. Off by default;
+the user's installed build enables it. Vulkan over CUDA: vendor-agnostic, ~1 GB
+build-time SDK vs ~4 GB, and zero runtime redistributables (vulkan-1.dll ships with
+GPU drivers). Moonshine (ADR-5 seam) remains the plan for fast *CPU-only* machines.
+
+**Why.**
+- Measured on the fixture set: finalize 196 ms vs ~1200 ms CPU — meets the original
+  P1-1 target (≤300 ms p50) with exact transcripts.
+- ggml falls back to CPU at runtime when no Vulkan device is present, so the GPU
+  binary is universal; the feature only changes what the build *can* use.
+- Cheap decodes let GPU builds default `decode_interval` to 300 ms (vs 700 ms CPU),
+  tightening live partial tracking — the property the user actually perceives.
+- Local GPU keeps the privacy posture intact: audio still never leaves the machine.
+
+**Consequences.** CI stays CPU-only (no Vulkan SDK requirement). GPU builds need the
+Vulkan SDK and a short `CARGO_TARGET_DIR` (MSVC FileTracker MAX_PATH, docs/04 v1.1
+note). Perf table gains a GPU column; CPU numbers remain the documented floor.

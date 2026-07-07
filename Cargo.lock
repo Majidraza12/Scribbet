@@ -2696,7 +2696,7 @@ dependencies = [
 
 [[package]]
 name = "od-audio"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "cpal",
  "hound",
@@ -2707,7 +2707,7 @@ dependencies = [
 
 [[package]]
 name = "od-cleanup"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "od-core-types",
  "proptest",
@@ -2717,18 +2717,18 @@ dependencies = [
 
 [[package]]
 name = "od-commands"
-version = "1.0.0"
+version = "1.1.0"
 
 [[package]]
 name = "od-core-types"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "od-insertion"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "thiserror 2.0.18",
  "tracing",
@@ -2737,7 +2737,7 @@ dependencies = [
 
 [[package]]
 name = "od-pipeline"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "hound",
  "od-audio",
@@ -2752,14 +2752,14 @@ dependencies = [
 
 [[package]]
 name = "od-rewrite"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "od-core-types",
 ]
 
 [[package]]
 name = "od-storage"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "od-core-types",
  "proptest",
@@ -2774,7 +2774,7 @@ dependencies = [
 
 [[package]]
 name = "od-stt"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "hound",
  "od-core-types",
@@ -2785,7 +2785,7 @@ dependencies = [
 
 [[package]]
 name = "od-vad"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "hound",
  "ort",
@@ -2801,7 +2801,7 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
 name = "opendictate-desktop"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "hound",
  "od-audio",
@@ -5285,6 +5285,7 @@ version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2088172d00f936c348d6a72f488dc2660ab3f507263a195df308a3c2383229f6"
 dependencies = [
+ "libc",
  "whisper-rs-sys",
 ]
 

@@ -13,6 +13,12 @@ whisper-rs = "0.16"
 thiserror.workspace = true
 tracing.workspace = true
 
+[features]
+# GPU-accelerated whisper via Vulkan (any modern GPU; runtime falls back to
+# CPU when no device is present, so a vulkan build stays universal).
+# Build-time requirement: Vulkan SDK (glslc) — not part of default CI builds.
+vulkan = ["whisper-rs/vulkan"]
+
 [dev-dependencies]
 # WAV loading for fixture-driven transcription tests.
 hound = "3"

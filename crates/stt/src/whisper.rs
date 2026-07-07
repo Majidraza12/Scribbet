@@ -39,7 +39,15 @@ impl Default for WhisperConfig {
     fn default() -> Self {
         Self {
             model_path: default_model_path(),
-            decode_interval: Duration::from_millis(700),
+            // On GPU a full decode costs ~100-200 ms (measured, RTX 4060),
+            // so a 300 ms cadence keeps partials tight without back-to-back
+            // decodes. On CPU a decode costs ~1 s; 700 ms is already the
+            // floor there (a shorter interval just queues decodes).
+            decode_interval: Duration::from_millis(if cfg!(feature = "vulkan") {
+                300
+            } else {
+                700
+            }),
             threads: None,
         }
     }
