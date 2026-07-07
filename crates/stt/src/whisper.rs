@@ -97,7 +97,12 @@ impl WhisperEngine {
             reason: "path is not valid UTF-8".into(),
         })?;
 
-        let ctx = WhisperContext::new_with_params(path_str, WhisperContextParameters::default())
+        let mut ctx_params = WhisperContextParameters::default();
+        // Flash attention: ~20-30% decode win on GPU backends. Only set on
+        // GPU builds — whisper.cpp's CPU path gains nothing and the flag
+        // disables DTW (unused here, but keep the CPU baseline untouched).
+        ctx_params.flash_attn(cfg!(feature = "vulkan"));
+        let ctx = WhisperContext::new_with_params(path_str, ctx_params)
             .map_err(|e| SttError::ModelUnavailable {
                 path: path.display().to_string(),
                 reason: e.to_string(),

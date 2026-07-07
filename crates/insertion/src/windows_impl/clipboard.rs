@@ -56,6 +56,13 @@ pub fn paste_with_restore(text: &str, settle: Duration) -> Result<(), String> {
     Ok(())
 }
 
+/// Places `text` on the clipboard without pasting or restoring — the
+/// recovery path when every insertion tier fails, so a session's text is
+/// never lost (the user can paste it manually).
+pub fn copy_only(text: &str) -> Result<(), String> {
+    with_clipboard(|| write_text(text))?
+}
+
 /// Opens the clipboard with retries (other apps hold it in bursts), runs
 /// `f`, always closes.
 fn with_clipboard<T>(f: impl FnOnce() -> Result<T, String>) -> Result<Result<T, String>, String> {

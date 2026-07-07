@@ -136,6 +136,16 @@ pub enum AppEvent {
         /// Text after the cleanup chain — what insertion delivers.
         cleaned: String,
     },
+    /// A dictation session ended with text: the combined cleaned finals the
+    /// controller inserts as one block. History records this, one row per
+    /// session (the per-segment `FinalReady` events remain for live/HUD use).
+    SessionCompleted {
+        /// All raw finals of the session, space-joined.
+        raw: String,
+        /// The session's combined cleaned text — exactly what insertion
+        /// delivers.
+        cleaned: String,
+    },
     /// A final segment's text was delivered into the target application.
     Inserted {
         /// Segment that was inserted.

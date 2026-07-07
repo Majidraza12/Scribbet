@@ -12,6 +12,12 @@ use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, IsWindow};
 
 use crate::{FocusInfo, InsertError, InsertOutcome, InsertionTier, TextInserter, builtin_quirk};
 
+/// Places `text` on the clipboard (no paste, no restore). Recovery path for
+/// callers when insertion fails outright: the text stays one Ctrl+V away.
+pub fn copy_to_clipboard(text: &str) -> Result<(), String> {
+    clipboard::copy_only(text)
+}
+
 /// [`TextInserter`] for Windows.
 ///
 /// Not `Send` by design (holds an apartment-threaded UIA COM object):
@@ -47,23 +53,45 @@ impl TextInserter for WindowsInserter {
 
         // Re-verify the target. If the user deliberately moved focus since
         // capture, follow the caret — never type into a window the user left.
+        // (focus::capture resolves our own windows to the one beneath them,
+        // so a stop-click on the overlay pill never counts as a move.)
         let target_hwnd = HWND(target.window.0 as *mut core::ffi::c_void);
         let current = unsafe { GetForegroundWindow() };
         let effective: FocusInfo = if current == target_hwnd {
             target.clone()
         } else if unsafe { IsWindow(Some(current)) }.as_bool() && !current.is_invalid() {
             let refreshed = focus::capture()?;
-            tracing::info!(
-                from = %target.process,
-                to = %refreshed.process,
-                "focus moved since capture; following current focus"
-            );
+            if refreshed.window != target.window {
+                tracing::info!(
+                    from = %target.process,
+                    to = %refreshed.process,
+                    "focus moved since capture; following current focus"
+                );
+            }
             refreshed
         } else if unsafe { IsWindow(Some(target_hwnd)) }.as_bool() {
             target.clone()
         } else {
             return Err(InsertError::TargetGone);
         };
+
+        // The keystroke tiers deliver to whichever window owns the keyboard.
+        // If that isn't the effective target (stop-click left our pill
+        // foreground), hand focus back before typing.
+        let effective_hwnd = HWND(effective.window.0 as *mut core::ffi::c_void);
+        if unsafe { GetForegroundWindow() } != effective_hwnd {
+            if !focus::activate(effective.window) {
+                return Err(InsertError::Platform(
+                    "could not re-activate the dictation target".into(),
+                ));
+            }
+            std::thread::sleep(std::time::Duration::from_millis(80));
+            if unsafe { GetForegroundWindow() } != effective_hwnd {
+                return Err(InsertError::Platform(
+                    "dictation target did not accept focus".into(),
+                ));
+            }
+        }
 
         let quirk = builtin_quirk(&effective.process);
         let probe = self.uia.probe_focused();

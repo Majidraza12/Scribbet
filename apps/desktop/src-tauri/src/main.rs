@@ -66,6 +66,12 @@ fn get_level(state: tauri::State<'_, AppState>) -> f32 {
     state.session.level()
 }
 
+/// Click-to-talk from the overlay pill: same path as the toggle hotkey.
+#[tauri::command]
+fn toggle_session(state: tauri::State<'_, AppState>) {
+    state.session.send(SessionCommand::Toggle);
+}
+
 #[tauri::command]
 fn get_settings(state: tauri::State<'_, AppState>) -> Settings {
     state.settings.lock().expect("settings lock").clone()
@@ -375,6 +381,11 @@ fn main() {
             build_tray(app.handle())?;
             spawn_event_bridge(app.handle().clone(), events);
             position_overlay(app.handle());
+            // Permanent presence indicator: the pill is always on screen and
+            // is the click-to-talk surface; it starts tiny/dim when idle.
+            if let Some(overlay) = app.handle().get_webview_window("overlay") {
+                let _ = overlay.show();
+            }
 
             if !model_present {
                 show_onboarding(app.handle());
@@ -391,6 +402,7 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             get_level,
+            toggle_session,
             get_settings,
             update_settings,
             list_profiles,
@@ -601,7 +613,10 @@ fn spawn_event_bridge(app: AppHandle, events: std::sync::mpsc::Receiver<AppEvent
             while let Ok(event) = events.recv() {
                 match &event {
                     AppEvent::StateChanged { state } => apply_state(&app, *state),
-                    AppEvent::FinalReady { raw, cleaned, .. } => {
+                    // One history row per dictation session (combined text),
+                    // not per sentence — per-segment FinalReady stays for
+                    // live surfaces only.
+                    AppEvent::SessionCompleted { raw, cleaned } => {
                         record_history(&app, raw, cleaned);
                     }
                     AppEvent::UtteranceFinalized { finalize_ms } => {
@@ -677,15 +692,8 @@ fn apply_state(app: &AppHandle, state: SessionState) {
         };
         let _ = tray.set_tooltip(Some(tip));
     }
-    if let Some(overlay) = app.get_webview_window("overlay") {
-        let _ = match state {
-            SessionState::Listening => overlay.show(),
-            // Keep the pill up through Finalizing so the user sees the tail
-            // text land; hide on Idle.
-            SessionState::Finalizing => Ok(()),
-            SessionState::Idle => overlay.hide(),
-        };
-    }
+    // The overlay window itself stays permanently visible (Wispr-style
+    // presence indicator); the webview renders idle/listening/finalizing.
 }
 
 /// Bottom-center of the primary monitor, above the taskbar.
@@ -698,6 +706,6 @@ fn position_overlay(app: &AppHandle) {
     };
     let mon = monitor.size();
     let x = (mon.width.saturating_sub(size.width)) / 2;
-    let y = mon.height.saturating_sub(size.height + 96);
+    let y = mon.height.saturating_sub(size.height + 52);
     let _ = overlay.set_position(tauri::PhysicalPosition::new(x as i32, y as i32));
 }

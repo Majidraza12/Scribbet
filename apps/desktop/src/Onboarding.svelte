@@ -98,9 +98,8 @@
 </div>
 
 <style>
-  :global(body) {
-    background: #141419;
-  }
+  /* No :global(body) background — see Settings.svelte; it would paint the
+     transparent overlay window. main.ts handles non-overlay page color. */
   .page {
     min-height: 100vh;
     box-sizing: border-box;

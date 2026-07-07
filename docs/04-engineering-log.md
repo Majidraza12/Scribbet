@@ -131,7 +131,7 @@ Numbers from the dev machine (4-core+ laptop-class CPU, no GPU assumed).
 | Idle RAM | n/a | n/a | **129 MB** WS (debug; whisper model resident ≈ 59 MB of that) | **123.6 MB** WS (see note) | **~112 MB** WS (model in VRAM) | ≤ 120 MB (250 hard) |
 | Idle CPU | n/a | n/a | **0 %** over 10 s sample | **0.00 %** avg over soak | 0 % | ≤ 5 % |
 | STT partial cadence | n/a | 700 ms configured | unchanged | unchanged | **300 ms** (feature-conditional default) | partial visible ≤ 500 ms behind voice |
-| STT finalize (speech-end → final) | n/a | ~1200 ms (P1-1) | unchanged (P1-1 open) | unchanged (P1-1 → M10) | **196 ms** (P1-1 target met) | ≤ 300 ms p50 (met on GPU; CPU builds accepted at ~1.0–1.2 s) |
+| STT finalize (speech-end → final) | n/a | ~1200 ms (P1-1) | unchanged (P1-1 open) | unchanged (P1-1 → M10) | **196 ms** (P1-1 target met); **160 ms** at v1.2 (flash attention) | ≤ 300 ms p50 (met on GPU; CPU builds accepted at ~1.0–1.2 s) |
 | Hotkey → listening | n/a | n/a | **51 ms** (toggle → mic open + Listening published) | unchanged | unchanged | ≤ 100 ms |
 | Ring overruns during capture | 0 (2 s live) | 0 (fixtures) | 0 (live session) | 0 | 0 | 0 |
 | Transcript accuracy on fixtures | n/a | exact on 4/4 | unchanged | exact (e2e, incl. cleaned insertion) | exact | exact |
@@ -181,6 +181,61 @@ added, no pipeline instrumentation changed. M6 was skipped by user decision
 (2026-07-05, ROADMAP) — no perf surface.
 
 ## Issue log
+
+### I-9 (v1.2) · Stop-click on the overlay pill typed the text into the pill
+
+- **Symptom**: sessions stopped via click-to-talk inserted nowhere visible;
+  log showed `focus moved since capture … to=opendictate-desktop.exe`.
+- **Root cause**: clicking the pill makes the overlay the foreground window;
+  the inserter's by-design "follow the user's focus" rule then treated our
+  own pill as the user's chosen target.
+- **Why it happened**: click-to-talk was added (v1.2 overlay) without
+  revisiting the focus contract, which was written when hotkeys were the
+  only trigger. (`focusable: false` was tried first and rejected: Windows
+  then delivers no clicks to the webview at all — verified empirically.)
+- **Why the fix is correct**: our own windows can never be a dictation
+  target, so `focus::capture` resolves any own-process foreground to the
+  first visible, titled, non-tool foreign window below it in the z-order,
+  and `insert` hands the foreground back to the effective target (allowed —
+  we own the foreground in exactly this case) before any keystroke tier
+  runs. Verified live: click-started and click-stopped sessions insert into
+  the window under the pill.
+- **Follow-up**: none; hotkey-only flow is unchanged (foreground never
+  moves, both checks are no-ops).
+
+### I-10 (v1.2) · UIA SetValue "succeeds" invisibly in Electron/Chromium apps
+
+- **Symptom**: `inserted tier=Uia … app=cursor.exe` in the log, nothing on
+  screen; user saw the text vanish.
+- **Root cause**: Chromium's UIA tree exposes writable value-patterned
+  nodes that aren't the visible editor; `SetValue` against them returns
+  success without rendering anywhere the user looks.
+- **Why it happened**: the UIA fast path was validated against Win32 EDIT
+  controls (harness, Notepad), where ValuePattern is truthful. Web-rendered
+  accessibility trees break the "success means visible" assumption.
+- **Why the fix is correct**: the quirk table now prefers SendInput for
+  known Electron/Chromium hosts (cursor, code, chrome, msedge, brave,
+  firefox, discord, slack, notion, obsidian, teams) — synthetic keystrokes
+  are indistinguishable from typing to a web UI. Verified live in Cursor.
+- **Follow-up**: any future UIA-tier bug report should first ask "is the
+  target web-rendered?".
+
+### I-11 (v1.2) · Shared CSS bundle painted the transparent overlay window
+
+- **Symptom**: a dark box behind the overlay pill on a `transparent: true`
+  window; survived window-level fixes (`backgroundColor`, WebView2 env var).
+- **Root cause**: `:global(body) { background: #141419 }` in
+  Settings.svelte and Onboarding.svelte — all three windows share one
+  compiled CSS bundle, and the later-in-bundle globals overrode the
+  overlay's transparent body.
+- **Why it happened**: per-window styling was done in component `<style>`
+  blocks as if they were scoped; `:global` escapes that scope by definition.
+  Debugging first assumed the compositor because the color read as "black".
+- **Why the fix is correct**: the globals are deleted; non-overlay windows
+  get their page background from the existing label check in `main.ts`,
+  which runs only off-overlay. Verified live: pill floats with no box.
+- **Follow-up**: rule — no `:global` visual styles in window components;
+  window-specific page styling lives in `main.ts`'s label branch.
 
 ### I-7 (M9) · First e2e draft inserted mid-decode → text followed drifting focus
 

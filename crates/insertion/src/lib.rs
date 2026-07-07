@@ -26,6 +26,14 @@ use thiserror::Error;
 mod windows_impl;
 #[cfg(windows)]
 pub use windows_impl::WindowsInserter;
+#[cfg(windows)]
+pub use windows_impl::copy_to_clipboard;
+
+/// Non-Windows stub: reports the clipboard as unavailable.
+#[cfg(not(windows))]
+pub fn copy_to_clipboard(_text: &str) -> Result<(), String> {
+    Err("clipboard unavailable on this platform".into())
+}
 
 /// Identifies a top-level window (HWND on Windows) without exposing
 /// platform handle types to portable code.
@@ -165,6 +173,15 @@ pub fn builtin_quirk(process: &str) -> AppQuirk {
         "mstsc.exe" | "vmconnect.exe" => AppQuirk {
             prefer: InsertionTier::Clipboard,
             paste_settle: Duration::from_millis(400),
+            ..AppQuirk::default()
+        },
+        // Electron/Chromium apps: UIA ValuePattern "succeeds" against hidden
+        // accessibility nodes without touching the visible editor (observed
+        // in Cursor — SetValue reported ok, no text on screen). Skip UIA and
+        // type real keystrokes, which web UIs handle exactly like a user.
+        "cursor.exe" | "code.exe" | "chrome.exe" | "msedge.exe" | "brave.exe" | "firefox.exe"
+        | "discord.exe" | "slack.exe" | "notion.exe" | "obsidian.exe" | "teams.exe" => AppQuirk {
+            prefer: InsertionTier::SendInput,
             ..AppQuirk::default()
         },
         _ => AppQuirk::default(),

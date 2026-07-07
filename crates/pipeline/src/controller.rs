@@ -152,6 +152,9 @@ where
                 segments: Vec::new(),
                 chunk: vec![0.0; CHUNK_SAMPLES],
                 finalize_seen: None,
+                session_text: String::new(),
+                session_raw: String::new(),
+                session_last_id: None,
             }
             .run();
         })
@@ -186,6 +189,14 @@ struct Controller<E: SttEngine, I: TextInserter> {
     chunk: Vec<f32>,
     /// Last finalize latency already published (dedup for the HUD event).
     finalize_seen: Option<Duration>,
+    /// Cleaned finals accumulated across the current session; inserted as
+    /// one block when the session ends (one dictation = one insert, so
+    /// mid-session focus changes can't scatter text across windows).
+    session_text: String,
+    /// Raw finals of the session, space-joined (history's raw column).
+    session_raw: String,
+    /// Id of the newest final in `session_text` (labels insert events).
+    session_last_id: Option<od_core_types::SegmentId>,
 }
 
 impl<E: SttEngine, I: TextInserter> Controller<E, I> {
@@ -242,6 +253,9 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
                     None
                 }
             });
+        self.session_text.clear();
+        self.session_raw.clear();
+        self.session_last_id = None;
         let (session, mut consumer) = match CaptureSession::start(&self.capture_config) {
             Ok(pair) => pair,
             Err(e) => {
@@ -327,6 +341,7 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
         self.publish_segments(&mut segments);
         self.segments = segments;
         self.publish_finalize_latency();
+        self.insert_session();
 
         session.stop();
         self.level_bits.store(0.0f32.to_bits(), Ordering::Relaxed);
@@ -376,47 +391,75 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
                     });
                 }
                 SegmentKind::Final => {
-                    // Finals: raw STT text → cleanup chain → insertion.
+                    // Finals: raw STT text → cleanup chain → session buffer.
+                    // Insertion happens once, at session end (insert_session).
                     let raw = seg.text.clone();
                     self.chain.run(seg, &self.ctx);
                     self.bus.publish(&AppEvent::FinalReady {
                         segment_id: seg.id,
-                        raw,
+                        raw: raw.clone(),
                         cleaned: seg.text.clone(),
                     });
-                    self.insert_final(seg);
+                    self.buffer_final(&raw, seg);
                 }
             }
         }
     }
 
-    /// Delivers a final (cleaned) segment into the captured target
-    /// application. A trailing space separates consecutive segments unless
-    /// the cleanup chain already ended the segment with layout whitespace
-    /// (email newlines, meeting bullets).
-    fn insert_final(&mut self, seg: &Segment) {
-        let (Some(inserter), Some(focus)) = (self.inserter.as_mut(), self.focus.as_ref()) else {
-            return;
-        };
+    /// Appends a cleaned final to the session buffer. A trailing space
+    /// separates consecutive segments unless the cleanup chain already ended
+    /// the segment with layout whitespace (email newlines, meeting bullets).
+    fn buffer_final(&mut self, raw: &str, seg: &Segment) {
         if seg.text.is_empty() {
             return;
         }
-        let text = if seg.text.ends_with(char::is_whitespace) {
-            seg.text.clone()
-        } else {
-            format!("{} ", seg.text)
+        self.session_text.push_str(&seg.text);
+        if !seg.text.ends_with(char::is_whitespace) {
+            self.session_text.push(' ');
+        }
+        if !self.session_raw.is_empty() {
+            self.session_raw.push(' ');
+        }
+        self.session_raw.push_str(raw.trim());
+        self.session_last_id = Some(seg.id);
+    }
+
+    /// Delivers the whole session's cleaned text into the captured target
+    /// in one insert (runs during Finalizing, before the mic closes). If
+    /// every tier fails, the text is parked on the clipboard so nothing the
+    /// user said is ever lost — they can Ctrl+V it themselves.
+    fn insert_session(&mut self) {
+        let Some(seg_id) = self.session_last_id else {
+            return; // silence-only session
         };
-        match inserter.insert(&text, focus) {
+        self.bus.publish(&AppEvent::SessionCompleted {
+            raw: self.session_raw.clone(),
+            cleaned: self.session_text.trim_end().to_owned(),
+        });
+        let (Some(inserter), Some(focus)) = (self.inserter.as_mut(), self.focus.as_ref()) else {
+            return;
+        };
+        match inserter.insert(&self.session_text, focus) {
             Ok(outcome) => self.bus.publish(&AppEvent::Inserted {
-                segment_id: seg.id,
+                segment_id: seg_id,
                 tier: outcome.tier.as_str().to_owned(),
                 latency_ms: outcome.duration.as_millis() as u64,
             }),
             Err(e) => {
                 tracing::error!("insertion failed: {e}");
+                let error = match od_insertion::copy_to_clipboard(&self.session_text) {
+                    Ok(()) => {
+                        tracing::warn!("session text parked on clipboard (paste to recover)");
+                        format!("{e}; text copied to clipboard")
+                    }
+                    Err(c) => {
+                        tracing::error!("clipboard fallback also failed: {c}");
+                        e.to_string()
+                    }
+                };
                 self.bus.publish(&AppEvent::InsertFailed {
-                    segment_id: seg.id,
-                    error: e.to_string(),
+                    segment_id: seg_id,
+                    error,
                 });
             }
         }

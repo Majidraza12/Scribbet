@@ -227,6 +227,25 @@ assumption ignored.
       (MSVC FileTracker MAX_PATH — docs/04 v1.1 note); CI stays CPU
 - [x] User-validated live ("actually working, impressed") incl. VS Code
 
+## v1.2 — Wispr-style UX + session insertion ☑ (2026-07-07)
+Driven by first days of real daily use.
+- [x] Overlay redesign: permanent tiny black pill (outline, white bars, no
+      text, no green), bottom-center 52 px above taskbar; expands while
+      listening; click-to-talk (`toggle_session` command). Fixed the
+      shared-CSS leak that painted the transparent overlay window dark
+      (`:global(body)` from Settings/Onboarding — I-11).
+- [x] One dictation session = one insert (finals buffered, inserted at stop)
+      and one history row (`AppEvent::SessionCompleted`); clipboard fallback
+      when every tier fails, so text is never lost.
+- [x] I-9: stop-click focused the pill → text typed into the overlay.
+      Fix: focus capture resolves our own windows to the window beneath
+      (z-order walk) + focus handback before typing.
+- [x] I-10: UIA SetValue reports success against hidden accessibility nodes
+      in Electron/Chromium apps (Cursor). Fix: quirk table prefers SendInput
+      for cursor/code/chrome/edge/discord/slack/etc.
+- [x] Perf: whisper flash-attention on GPU builds — finalize 196 → 160 ms;
+      fixtures exact.
+
 ## Post-v1 (parked, by design)
 - ⏸ `ClaudeRewriter` / `OpenAIRewriter` / `LocalLLMRewriter` (cargo features, per ADR-7)
 - ⏸ Moonshine ONNX streaming STT backend

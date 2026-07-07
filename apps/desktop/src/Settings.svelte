@@ -478,9 +478,9 @@
 </div>
 
 <style>
-  :global(body) {
-    background: #141419;
-  }
+  /* No :global(body) background here: all three windows share one CSS
+     bundle, and a global paint would fill the transparent overlay window
+     (main.ts sets the dark page background for non-overlay windows). */
   .shell {
     display: flex;
     min-height: 100vh;
