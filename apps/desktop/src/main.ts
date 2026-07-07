@@ -16,7 +16,7 @@ const app = mount(component, {
 if (label !== "overlay") {
   // The shared index.html is transparent for the overlay's sake; the
   // other windows want a solid page.
-  document.documentElement.style.background = "#141419";
+  document.documentElement.style.background = "#0c0c0e";
   document.body.style.overflow = "auto";
 }
 

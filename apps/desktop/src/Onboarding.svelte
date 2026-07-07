@@ -128,7 +128,7 @@
     margin: 0 0 14px;
   }
   .card {
-    background: #1b1b22;
+    background: #141416;
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 12px;
     padding: 14px 18px;
@@ -139,7 +139,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #3ddc84;
+    color: #f4570a;
     margin: 0 0 8px;
   }
   ul {
@@ -153,7 +153,7 @@
     margin: 6px 0;
   }
   .primary {
-    background: #3ddc84;
+    background: #f4570a;
     color: #0d1117;
     border: 0;
     border-radius: 8px;
@@ -172,7 +172,7 @@
   }
   .bar {
     height: 100%;
-    background: #3ddc84;
+    background: #f4570a;
     transition: width 200ms;
   }
   .dim {
@@ -180,7 +180,7 @@
     font-size: 12.5px;
   }
   .ok {
-    color: #3ddc84;
+    color: #f4570a;
     font-weight: 600;
   }
   .err {
@@ -196,7 +196,7 @@
   .hotkeys span {
     font-family: Consolas, monospace;
     color: #b9b9c6;
-    background: #26262f;
+    background: #1c1c1f;
     border-radius: 5px;
     padding: 1px 7px;
   }

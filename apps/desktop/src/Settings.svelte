@@ -499,7 +499,7 @@
     width: 176px;
     flex: none;
     padding: 16px 10px;
-    background: #0f0f13;
+    background: #0a0a0c;
     border-right: 1px solid rgba(255, 255, 255, 0.07);
     position: sticky;
     top: 0;
@@ -526,8 +526,8 @@
     background: rgba(255, 255, 255, 0.05);
   }
   .navitem.active {
-    background: rgba(61, 220, 132, 0.12);
-    color: #3ddc84;
+    background: rgba(244, 87, 10, 0.12);
+    color: #f4570a;
     font-weight: 600;
   }
   .spacer {
@@ -535,7 +535,7 @@
   }
   .status {
     font-size: 12px;
-    color: #3ddc84;
+    color: #f4570a;
     padding: 8px 12px;
   }
   .status.error {
@@ -564,7 +564,7 @@
   section {
     margin: 22px 0;
     padding: 16px;
-    background: #1b1b22;
+    background: #141416;
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 12px;
   }
@@ -575,7 +575,7 @@
   }
   select,
   input:not([type="checkbox"]) {
-    background: #26262f;
+    background: #1c1c1f;
     color: #e8e8ee;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
@@ -608,7 +608,7 @@
     cursor: pointer;
   }
   .hotkey {
-    background: #26262f;
+    background: #1c1c1f;
     color: #e8e8ee;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 8px;
@@ -618,8 +618,8 @@
     font-family: Consolas, monospace;
   }
   .hotkey.capturing {
-    border-color: #3ddc84;
-    color: #3ddc84;
+    border-color: #f4570a;
+    color: #f4570a;
   }
   .check {
     display: flex;
@@ -633,7 +633,7 @@
     color: #b9b9c6;
   }
   .check input {
-    accent-color: #3ddc84;
+    accent-color: #f4570a;
     width: 15px;
     height: 15px;
   }
@@ -643,7 +643,7 @@
     padding-left: 12px;
   }
   .primary {
-    background: #3ddc84;
+    background: #f4570a;
     color: #0d1117;
     border: 0;
     border-radius: 8px;
@@ -718,8 +718,8 @@
   .chip {
     display: inline-block;
     font-size: 11px;
-    color: #3ddc84;
-    background: rgba(61, 220, 132, 0.1);
+    color: #f4570a;
+    background: rgba(244, 87, 10, 0.1);
     border-radius: 999px;
     padding: 1px 8px;
     margin-top: 2px;

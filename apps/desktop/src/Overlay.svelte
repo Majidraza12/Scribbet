@@ -125,11 +125,12 @@
     width: 30px;
     height: 4px;
     border-radius: 2px;
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(244, 87, 10, 0.9);
     transition: width 120ms ease;
   }
   .pill:hover .sliver {
     width: 38px;
+    background: #f4570a;
   }
   .wave {
     display: flex;
@@ -140,10 +141,10 @@
   .bar {
     width: 2px;
     border-radius: 1px;
-    background: rgba(255, 255, 255, 0.92);
+    background: #f4570a;
     transition: height 90ms ease-out;
   }
   .pill.busy .bar {
-    background: rgba(255, 255, 255, 0.45);
+    background: rgba(244, 87, 10, 0.45);
   }
 </style>
