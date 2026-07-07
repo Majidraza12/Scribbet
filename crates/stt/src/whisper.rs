@@ -79,6 +79,9 @@ pub struct WhisperEngine {
     /// Initial prompt built from the vocabulary bias.
     prompt: String,
     utterance_active: bool,
+    /// Wall-clock cost of the most recent decode; paces the cadence so
+    /// decodes never queue up faster than they finish.
+    last_decode: Duration,
 }
 
 impl WhisperEngine {
@@ -123,6 +126,7 @@ impl WhisperEngine {
             language: None,
             prompt: String::new(),
             utterance_active: false,
+            last_decode: Duration::ZERO,
         })
     }
 
@@ -180,9 +184,10 @@ impl WhisperEngine {
         }
         let text = text.trim().to_owned();
 
+        self.last_decode = start.elapsed();
         tracing::debug!(
             audio_ms = samples.len() * 1000 / SAMPLE_RATE,
-            decode_ms = start.elapsed().as_millis() as u64,
+            decode_ms = self.last_decode.as_millis() as u64,
             "whisper decode"
         );
         Ok(text)
@@ -213,8 +218,13 @@ impl SttEngine for WhisperEngine {
         assert!(self.utterance_active, "feed outside begin/end utterance");
         self.buffer.extend_from_slice(samples);
 
-        let interval_samples =
-            (self.config.decode_interval.as_secs_f64() * SAMPLE_RATE as f64) as usize;
+        // Self-pacing: never schedule decodes faster than they complete. On
+        // long utterances a near-full-window decode costs ~1 s+; a fixed
+        // cadence shorter than that builds an unbounded backlog that the
+        // stop command then has to wait out (observed: 3-10 s stop lag on
+        // 30-40 s monologues).
+        let pace = self.config.decode_interval.max(self.last_decode);
+        let interval_samples = (pace.as_secs_f64() * SAMPLE_RATE as f64) as usize;
         if self.buffer.len() - self.decoded_up_to < interval_samples.max(1) {
             return Ok(Vec::new());
         }

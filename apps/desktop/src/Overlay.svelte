@@ -14,9 +14,12 @@
 
   // Nine hairline bars, center-weighted; all of them ride the level.
   const ENVELOPE = [0.5, 0.65, 0.8, 0.92, 1, 0.92, 0.8, 0.65, 0.5];
-  const BASE_PX = 5;
-  const MAX_PX = 26;
+  // Per-bar wave phase/speed: organic motion instead of random flicker.
+  const PHASES = ENVELOPE.map((_, i) => i * 1.7);
+  const BASE_PX = 4;
+  const MAX_PX = 16;
   let heights = $state(ENVELOPE.map(() => BASE_PX));
+  let smoothed = ENVELOPE.map(() => BASE_PX);
 
   function onEvent(ev: AppEvent) {
     if (ev.type === "state_changed") {
@@ -36,14 +39,18 @@
     const poll = setInterval(async () => {
       const level =
         sessionState === "listening" ? await invoke<number>("get_level") : 0;
-      // Hot-mic boost (6x, as the old meter) + per-bar jitter so the whole
-      // set dances with the voice instead of filling left to right.
-      const drive = Math.min(1, level * 6);
-      heights = ENVELOPE.map(
-        (env) =>
-          BASE_PX +
-          drive * env * (0.6 + 0.4 * Math.random()) * (MAX_PX - BASE_PX),
-      );
+      // Square-root drive: normal speech RMS is small, and a linear map
+      // left only the tallest bar visibly moving. sqrt lifts quiet levels
+      // so the whole set responds, while loud speech still saturates.
+      const drive = Math.min(1, Math.sqrt(level * 8));
+      const t = performance.now() / 1000;
+      smoothed = smoothed.map((h, i) => {
+        // Per-bar sway with different speeds — lively, never random.
+        const sway = 0.65 + 0.35 * Math.sin(t * (5 + i * 0.9) + PHASES[i]);
+        const target = BASE_PX + drive * ENVELOPE[i] * sway * (MAX_PX - BASE_PX);
+        return h + (target - h) * 0.5;
+      });
+      heights = smoothed.slice();
     }, 66);
     return () => {
       clearInterval(poll);
@@ -110,9 +117,9 @@
   }
   .pill.live,
   .pill.busy {
-    min-width: 66px;
-    height: 36px;
-    border-radius: 18px;
+    min-width: 58px;
+    height: 26px;
+    border-radius: 13px;
   }
   .sliver {
     width: 30px;
@@ -128,13 +135,13 @@
     display: flex;
     align-items: center;
     gap: 3px;
-    height: 28px;
+    height: 18px;
   }
   .bar {
-    width: 3px;
-    border-radius: 2px;
+    width: 2px;
+    border-radius: 1px;
     background: rgba(255, 255, 255, 0.92);
-    transition: height 70ms ease-out;
+    transition: height 90ms ease-out;
   }
   .pill.busy .bar {
     background: rgba(255, 255, 255, 0.45);

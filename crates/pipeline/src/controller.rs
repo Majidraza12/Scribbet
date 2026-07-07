@@ -274,6 +274,7 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
 
         let mut was_in_speech = false;
         let mut shutdown = false;
+        let mut stop = false;
         // Context/device changes arriving mid-session apply after the
         // session ends (never mid-utterance).
         let mut pending_ctx: Option<PipelineCtx> = None;
@@ -298,7 +299,10 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
             self.level_bits
                 .store(meter.level().to_bits(), Ordering::Relaxed);
 
-            // Drain everything buffered, in chunks.
+            // Drain everything buffered, in chunks. Each feed may run a
+            // decode (~1 s on a long utterance), so a stop must be able to
+            // interrupt the drain — otherwise it waits out the whole
+            // backlog before the user sees the session end.
             loop {
                 let n = consumer.pop_slice(&mut self.chunk);
                 if n == 0 {
@@ -311,6 +315,23 @@ impl<E: SttEngine, I: TextInserter> Controller<E, I> {
                     Ok(in_speech) => was_in_speech = in_speech,
                     Err(e) => tracing::error!("transcription error: {e}"),
                 }
+                match self.commands.try_recv() {
+                    Ok(SessionCommand::Toggle | SessionCommand::PttReleased) => {
+                        stop = true;
+                        break;
+                    }
+                    Ok(SessionCommand::Shutdown) => {
+                        shutdown = true;
+                        stop = true;
+                        break;
+                    }
+                    Ok(SessionCommand::UpdateCtx(ctx)) => pending_ctx = Some(ctx),
+                    Ok(SessionCommand::SetDevice(dev)) => self.capture_config.device = dev,
+                    Ok(SessionCommand::PttPressed) | Err(_) => {}
+                }
+            }
+            if stop {
+                break;
             }
 
             if session.is_disconnected() {

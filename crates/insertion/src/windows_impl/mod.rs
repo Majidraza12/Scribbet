@@ -18,6 +18,10 @@ pub fn copy_to_clipboard(text: &str) -> Result<(), String> {
     clipboard::copy_only(text)
 }
 
+/// Above this many chars, keystroke simulation is user-perceptible (seconds
+/// for a paragraph) and one clipboard paste is preferred.
+const LONG_TEXT_PASTE_CHARS: usize = 120;
+
 /// [`TextInserter`] for Windows.
 ///
 /// Not `Send` by design (holds an apartment-threaded UIA COM object):
@@ -114,6 +118,15 @@ impl TextInserter for WindowsInserter {
                 plan.push(InsertionTier::Clipboard);
                 plan.push(InsertionTier::SendInput);
             }
+        }
+
+        // Long text: per-character SendInput takes visible seconds for a
+        // whole dictation session (v1.2 inserts once per session); a single
+        // paste is instant. Promote the clipboard tier unless the target is
+        // a password field.
+        if allow_clipboard && text.chars().count() > LONG_TEXT_PASTE_CHARS {
+            plan.retain(|t| *t != InsertionTier::Clipboard);
+            plan.insert(0, InsertionTier::Clipboard);
         }
 
         let mut last_err = String::new();
