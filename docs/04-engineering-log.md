@@ -182,11 +182,17 @@ added, no pipeline instrumentation changed. M6 was skipped by user decision
 
 ## Issue log
 
-### I-12 (v1.2.1, OPEN) · Taskbar button of the running app still shows the old icon
+### I-12 (v1.2.1, RESOLVED 2026-07-07) · Taskbar button of the running app still shows the old icon
 
-- **Status**: OPEN — waiting on a reboot (2026-07-08) to rule out shell
-  session state. Re-check after reboot: launch OpenDictate, look at the
-  running app's taskbar button.
+- **Status**: RESOLVED — reboot cleared it. Machine rebooted 2026-07-07
+  2:11 PM (a day earlier than planned); after reboot, with the settings
+  window open, the running app's taskbar button shows the new orange icon
+  (verified visually via taskbar screenshot).
+- **Root cause**: stale Windows shell *session* icon state. The exe
+  resource, runtime window icon, and shortcut were all already correct;
+  the shell kept serving the old bitmap for the rest of that logon session
+  even after icon-cache DB deletion + Explorer restart + `ie4uinit -show`.
+  Only a reboot flushed it.
 - **Verified so far**: `apps/desktop/src-tauri/icons/*` regenerated from the
   new logo (`npx tauri icon`); first bundle rebuild did NOT re-embed the
   icon because no Rust input changed (cargo skipped the resource step) —
@@ -195,14 +201,17 @@ added, no pipeline instrumentation changed. M6 was skipped by user decision
   `[System.Drawing.Icon]::ExtractAssociatedIcon` and inspected). Icon cache
   DBs deleted + Explorer restarted + `ie4uinit -show`; pin/unpin tried.
   Taskbar button still shows the old icon within the same Windows session.
-- **Next suspect if reboot does not fix it**: the *runtime window icon* —
-  Tauri's `generate_context!` embeds icon bytes at macro expansion inside
-  the crate compile; if any window (settings is the one with a taskbar
-  presence — the overlay is skipTaskbar) still carries stale bytes or no
-  explicit icon, set the window icon explicitly (`WebviewWindow::set_icon`
-  from `icons/128x128.png`) and/or check the NSIS Start-Menu `.lnk` icon
-  reference. Also confirm the running process path is the reinstalled exe
-  before debugging further.
+- **Post-reboot verification (2026-07-07)**: running process confirmed to be
+  the installed exe (`%LOCALAPPDATA%\OpenDictate\opendictate-desktop.exe`);
+  runtime window icon confirmed orange via `WM_GETICON` on the live window
+  (rules out the stale-`generate_context!`-bytes suspect); Start-Menu `.lnk`
+  icon is `,0` (exe resource, orange); no stale pinned-taskbar `.lnk`
+  exists. Settings window opened (second-launch single-instance forward)
+  and its taskbar button screenshot shows the new orange mic icon.
+- **Incidental finding**: the overlay pill window carries `WS_EX_APPWINDOW`
+  (not `WS_EX_TOOLWINDOW`); Tauri's skipTaskbar hides it via
+  `ITaskbarList::DeleteTab` instead. Harmless, noted so nobody "fixes" the
+  style later expecting it to control taskbar presence.
 
 ### I-9 (v1.2) · Stop-click on the overlay pill typed the text into the pill
 
