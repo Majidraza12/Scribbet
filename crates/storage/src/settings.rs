@@ -24,6 +24,11 @@ pub struct Settings {
     pub history_enabled: bool,
     /// Maximum history rows kept; oldest trimmed beyond this.
     pub history_cap: u32,
+    /// STT model file name inside the models dir (e.g.
+    /// "ggml-large-v3-turbo-q5_0.bin"); `None` = the built-in default
+    /// (base.en). A configured file that is missing on disk falls back to
+    /// the default with a logged warning — the app must never start deaf.
+    pub stt_model: Option<String>,
 }
 
 impl Default for Settings {
@@ -35,6 +40,7 @@ impl Default for Settings {
             hotkey_ptt: "ctrl+shift+d".into(),
             history_enabled: true,
             history_cap: 500,
+            stt_model: None,
         }
     }
 }

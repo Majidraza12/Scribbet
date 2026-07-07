@@ -72,6 +72,31 @@ fn toggle_session(state: tauri::State<'_, AppState>) {
     state.session.send(SessionCommand::Toggle);
 }
 
+/// Resolves the STT model file: the `stt_model` setting (a file name inside
+/// the models dir) when present on disk, else the built-in default
+/// (base.en). Missing configured models fall back with a warning — the app
+/// must never start deaf over a settings typo.
+fn resolve_stt_model(settings: &Settings) -> std::path::PathBuf {
+    let default = od_stt::default_model_path();
+    let Some(name) = &settings.stt_model else {
+        return default;
+    };
+    let candidate = match default.parent() {
+        Some(dir) => dir.join(name),
+        None => return default,
+    };
+    if candidate.is_file() {
+        tracing::info!(model = %candidate.display(), "using configured STT model");
+        candidate
+    } else {
+        tracing::warn!(
+            model = %candidate.display(),
+            "configured STT model not found; falling back to default"
+        );
+        default
+    }
+}
+
 #[tauri::command]
 fn get_settings(state: tauri::State<'_, AppState>) -> Settings {
     state.settings.lock().expect("settings lock").clone()
@@ -327,6 +352,7 @@ fn main() {
         ..CaptureConfig::default()
     };
     let (hotkey_toggle, hotkey_ptt) = (settings.hotkey_toggle.clone(), settings.hotkey_ptt.clone());
+    let stt_model_path = resolve_stt_model(&settings);
 
     tauri::Builder::default()
         // Must be the first plugin: a second launch hands off to the running
@@ -343,7 +369,12 @@ fn main() {
                 capture,
                 TranscriberConfig::default(),
                 ctx,
-                || WhisperEngine::new(WhisperConfig::default()),
+                move || {
+                    WhisperEngine::new(WhisperConfig {
+                        model_path: stt_model_path,
+                        ..WhisperConfig::default()
+                    })
+                },
                 || match od_insertion::WindowsInserter::new() {
                     Ok(inserter) => Some(inserter),
                     Err(e) => {
