@@ -182,6 +182,28 @@ added, no pipeline instrumentation changed. M6 was skipped by user decision
 
 ## Issue log
 
+### I-12 (v1.2.1, OPEN) · Taskbar button of the running app still shows the old icon
+
+- **Status**: OPEN — waiting on a reboot (2026-07-08) to rule out shell
+  session state. Re-check after reboot: launch OpenDictate, look at the
+  running app's taskbar button.
+- **Verified so far**: `apps/desktop/src-tauri/icons/*` regenerated from the
+  new logo (`npx tauri icon`); first bundle rebuild did NOT re-embed the
+  icon because no Rust input changed (cargo skipped the resource step) —
+  fixed by touching `build.rs` and rebuilding; the installed exe's embedded
+  resource icon is confirmed orange (extracted via
+  `[System.Drawing.Icon]::ExtractAssociatedIcon` and inspected). Icon cache
+  DBs deleted + Explorer restarted + `ie4uinit -show`; pin/unpin tried.
+  Taskbar button still shows the old icon within the same Windows session.
+- **Next suspect if reboot does not fix it**: the *runtime window icon* —
+  Tauri's `generate_context!` embeds icon bytes at macro expansion inside
+  the crate compile; if any window (settings is the one with a taskbar
+  presence — the overlay is skipTaskbar) still carries stale bytes or no
+  explicit icon, set the window icon explicitly (`WebviewWindow::set_icon`
+  from `icons/128x128.png`) and/or check the NSIS Start-Menu `.lnk` icon
+  reference. Also confirm the running process path is the reinstalled exe
+  before debugging further.
+
 ### I-9 (v1.2) · Stop-click on the overlay pill typed the text into the pill
 
 - **Symptom**: sessions stopped via click-to-talk inserted nowhere visible;
