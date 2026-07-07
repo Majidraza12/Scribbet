@@ -10,6 +10,11 @@ this repo. Written to be executed by Claude Code, but every step works by hand.
 > GPU, CPU build otherwise), install it, launch it, and verify the overlay
 > pill appears bottom-center. Tell me when I can dictate.
 
+After the VS C++ workload lands, the compiler is only on PATH inside a
+**Developer PowerShell for VS 2022** (or after running `vcvars64.bat`). If a
+build fails with "cl not found" or a missing `cmake`, reopen the shell as
+Developer PowerShell and retry from step 3.
+
 ---
 
 ## 1. Toolchain (install only what's missing)
@@ -18,12 +23,27 @@ Check each; install via winget where absent:
 
 | Tool | Check | Install |
 |---|---|---|
-| VS Build Tools + C++ | `Get-Command cl` after vcvars, or look for `C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools` | `winget install Microsoft.VisualStudio.2022.BuildTools` then add the **Desktop development with C++** workload |
+| VS Build Tools + C++ | `Get-Command cl` after vcvars, or look for `C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools` | see command below — winget alone does NOT install the C++ workload |
 | Rust (MSVC) | `cargo --version` | `winget install Rustlang.Rustup` then `rustup default stable-msvc` |
 | Node.js LTS | `node --version` | `winget install OpenJS.NodeJS.LTS` |
 | CMake | `cmake --version` | Ships inside VS Build Tools (`...\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin`) — add to PATH, or `winget install Kitware.CMake` |
 | LLVM (libclang, for whisper bindgen) | `Test-Path "C:\Program Files\LLVM\bin\libclang.dll"` | `winget install LLVM.LLVM` |
 | Vulkan SDK (GPU build only) | `Test-Path $env:VULKAN_SDK` | `winget install KhronosGroup.VulkanSDK` |
+
+**VS Build Tools — the one with a trap.** Installing the bare package gives you
+no compiler; the C++ workload must be named explicitly. Install (or repair an
+existing bare install) with:
+
+```powershell
+winget install Microsoft.VisualStudio.2022.BuildTools `
+  --override "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+```
+
+`--includeRecommended` pulls in the Windows SDK and CMake that ship inside the
+workload. After this, `cl` resolves inside a Developer PowerShell (or after
+running `vcvars64.bat`). If `cl` still isn't found, the workload didn't take —
+re-run the line above; do not proceed to `cargo build` without it (whisper's
+C++ will fail to compile).
 
 ## 2. Environment quirks (all hard-won; skip none)
 
