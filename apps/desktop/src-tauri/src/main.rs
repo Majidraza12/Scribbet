@@ -737,6 +737,6 @@ fn position_overlay(app: &AppHandle) {
     };
     let mon = monitor.size();
     let x = (mon.width.saturating_sub(size.width)) / 2;
-    let y = mon.height.saturating_sub(size.height + 52);
+    let y = mon.height.saturating_sub(size.height + 48);
     let _ = overlay.set_position(tauri::PhysicalPosition::new(x as i32, y as i32));
 }

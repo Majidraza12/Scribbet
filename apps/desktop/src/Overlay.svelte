@@ -99,11 +99,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 56px;
+    min-width: 44px;
     height: 14px;
-    padding: 0 10px;
+    padding: 0 8px;
     border-radius: 12px;
-    background: rgba(8, 8, 10, 0.96);
+    background: rgba(8, 8, 10, 0.65);
     border: 1px solid rgba(255, 255, 255, 0.32);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     cursor: pointer;
@@ -122,14 +122,14 @@
     border-radius: 13px;
   }
   .sliver {
-    width: 30px;
+    width: 24px;
     height: 4px;
     border-radius: 2px;
     background: rgba(244, 87, 10, 0.9);
     transition: width 120ms ease;
   }
   .pill:hover .sliver {
-    width: 38px;
+    width: 30px;
     background: #f4570a;
   }
   .wave {
