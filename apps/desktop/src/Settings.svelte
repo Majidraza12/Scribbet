@@ -119,22 +119,42 @@
 
   // ------- hotkey capture -------
   let capturing = $state<"toggle" | "ptt" | null>(null);
+  let hotkeyError = $state<string | null>(null);
 
-  function hotkeyFromEvent(e: KeyboardEvent): string | null {
+  // Keys that are safe to bind on their own (no modifier): they can't be
+  // produced while typing normal text, so a lone binding won't hijack the
+  // keyboard. Bare letters/digits/Space are deliberately excluded.
+  function isStandaloneSafe(code: string): boolean {
+    return (
+      /^F([1-9]|1[0-9]|2[0-4])$/.test(code) || // F1..F24
+      [
+        "Insert", "Delete", "Home", "End", "PageUp", "PageDown",
+        "Pause", "ScrollLock", "PrintScreen",
+        "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
+      ].includes(code)
+    );
+  }
+
+  function hotkeyFromEvent(e: KeyboardEvent): { combo: string } | { error: string } {
     const mods: string[] = [];
     if (e.ctrlKey) mods.push("ctrl");
     if (e.shiftKey) mods.push("shift");
     if (e.altKey) mods.push("alt");
     if (e.metaKey) mods.push("super");
     const code = e.code;
-    if (/^(Control|Shift|Alt|Meta)/.test(code)) return null; // modifier alone
+    if (/^(Control|Shift|Alt|Meta)/.test(code)) {
+      // Modifier-only combos (e.g. Ctrl+Win) can't be a global hotkey.
+      return { error: "Modifiers alone won't work — add a normal key too (a letter, number, Space, or an F-key)." };
+    }
     let key: string;
     if (code.startsWith("Key")) key = code.slice(3).toLowerCase();
     else if (code.startsWith("Digit")) key = code.slice(5);
     else if (code === "Space") key = "space";
     else key = code; // F1..F24, Home, etc. — tauri accepts these names
-    if (mods.length === 0) return null; // global hotkeys need a modifier
-    return [...mods, key].join("+");
+    if (mods.length === 0 && !isStandaloneSafe(code)) {
+      return { error: "A single letter, number, or Space needs a modifier (Ctrl/Shift/Alt/Win). For a one-key hotkey, use a function key like F9." };
+    }
+    return { combo: [...mods, key].join("+") };
   }
 
   async function onCaptureKey(e: KeyboardEvent) {
@@ -143,12 +163,23 @@
     e.stopPropagation();
     if (e.code === "Escape") {
       capturing = null;
+      hotkeyError = null;
       return;
     }
-    const combo = hotkeyFromEvent(e);
-    if (!combo) return;
-    if (capturing === "toggle") settings.hotkey_toggle = combo;
-    else settings.hotkey_ptt = combo;
+    const result = hotkeyFromEvent(e);
+    if ("error" in result) {
+      hotkeyError = result.error; // keep capturing so they can try again
+      return;
+    }
+    // Toggle and push-to-talk must differ (the backend rejects a clash).
+    const other = capturing === "toggle" ? settings.hotkey_ptt : settings.hotkey_toggle;
+    if (result.combo === other) {
+      hotkeyError = "That's already used by the other hotkey — pick a different one.";
+      return;
+    }
+    hotkeyError = null;
+    if (capturing === "toggle") settings.hotkey_toggle = result.combo;
+    else settings.hotkey_ptt = result.combo;
     capturing = null;
     await saveSettings();
   }
@@ -278,7 +309,7 @@
           <button
             class="hotkey"
             class:capturing={capturing === "toggle"}
-            onclick={() => (capturing = capturing === "toggle" ? null : "toggle")}
+            onclick={() => { hotkeyError = null; capturing = capturing === "toggle" ? null : "toggle"; }}
           >
             {capturing === "toggle" ? "Press keys… (Esc cancels)" : settings.hotkey_toggle}
           </button>
@@ -288,12 +319,23 @@
           <button
             class="hotkey"
             class:capturing={capturing === "ptt"}
-            onclick={() => (capturing = capturing === "ptt" ? null : "ptt")}
+            onclick={() => { hotkeyError = null; capturing = capturing === "ptt" ? null : "ptt"; }}
           >
             {capturing === "ptt" ? "Press keys… (Esc cancels)" : settings.hotkey_ptt}
           </button>
         </div>
-        <p class="hint">Global shortcuts need at least one modifier (Ctrl/Shift/Alt).</p>
+        {#if hotkeyError}
+          <p class="hotkey-error" role="alert">{hotkeyError}</p>
+        {/if}
+        <div class="hint keys-legend">
+          <strong>What you can bind:</strong>
+          <ul>
+            <li>Any combo of <b>Ctrl / Shift / Alt / Win</b> + a key — e.g. <code>Ctrl+Space</code>, <code>Ctrl+Win+K</code>.</li>
+            <li>A single <b>function key</b> on its own — e.g. <code>F9</code> (one-key, no modifier needed).</li>
+            <li>Also standalone: Insert, Home/End, Page Up/Down, arrows, Pause, etc.</li>
+          </ul>
+          <span class="dim">Not allowed: modifiers by themselves (e.g. Ctrl+Win), or a lone letter/number (would clash with typing).</span>
+        </div>
       </section>
     {:else if tab === "Cleanup" && profile}
       <h1>Cleanup — {profile.profile.name}</h1>
@@ -620,6 +662,30 @@
   .hotkey.capturing {
     border-color: #f4570a;
     color: #f4570a;
+  }
+  .hotkey-error {
+    color: #ff7a5c;
+    font-size: 12.5px;
+    margin: 6px 0 4px;
+  }
+  .keys-legend ul {
+    margin: 4px 0 6px;
+    padding-left: 18px;
+  }
+  .keys-legend li {
+    margin: 2px 0;
+  }
+  .keys-legend code {
+    background: #1c1c1f;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    padding: 0 5px;
+    font-size: 11.5px;
+  }
+  .keys-legend .dim {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
   }
   .check {
     display: flex;
