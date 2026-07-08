@@ -182,6 +182,44 @@ added, no pipeline instrumentation changed. M6 was skipped by user decision
 
 ## Issue log
 
+### I-13 (v1.2.1, PARTIAL 2026-07-08) · Inconsistent insertion into a terminal *embedded in an Electron host* (Cursor's integrated terminal)
+
+- **Symptom**: dictating into the integrated terminal inside Cursor lands the
+  text only *sometimes*; single-clicking the terminal (or double-clicking)
+  right before each start/stop makes it reliable. Reported on an AMD iGPU
+  laptop (Balanced power plan); the same build on the reporter's desktop had
+  never shown it.
+- **Two distinct causes, one fixed here, one inherent**:
+  1. **Fixed** — the re-activation path used a single `SetForegroundWindow`
+     plus a fixed 80 ms settle before typing/pasting. Under CPU throttling the
+     target did not become foreground within 80 ms, so a click-to-talk stop
+     inserted into nothing. Replaced with `focus::activate_and_wait` — polls
+     until the target truly owns the foreground (nudging the foreground lock
+     with a synthetic Alt tap on retry, the I-6 workaround) plus a short
+     Electron focus-routing settle. Confirmed via captured logs: click-to-talk
+     stops now insert (~145–170 ms) where they previously vanished.
+  2. **Inherent / unresolved** — the inserter targets the foreground *window*
+     (`cursor.exe`); it cannot see or choose which pane inside that single
+     Chromium process holds the keyboard (terminal vs editor). When focus has
+     drifted to the editor pane, a successful `SendInput`/paste lands there,
+     not the terminal — the app logs `inserted` (the OS accepted the events)
+     yet the user sees nothing in the terminal. No Win32 handle exists for the
+     child pane to target or verify.
+- **Evidence**: a 9-dictation session logged zero insertion failures — every
+  attempt reported `inserted tier=… app=cursor.exe`. The perceived failures
+  occur *after* a successful hand-off, i.e. pane-level focus, invisible to the
+  insertion layer.
+- **Workaround (documented for users)**: click the terminal pane, then toggle
+  with the **hotkey** (clicking the pill is the action most likely to disturb
+  pane focus); or use a standalone terminal (`WindowsTerminal.exe`), a separate
+  process with the proper Clipboard quirk and no pane ambiguity.
+- **Follow-up (candidates, not yet done)**: (a) after activation, resolve the
+  focused UIA element and, if its bounding rect is a descendant of the target
+  window, `SetFocus`/`Invoke` to re-assert the intended pane before typing;
+  (b) an optional per-app "always paste + extra settle" override for
+  `cursor.exe`; (c) reporter is dogfooding for a few days and will bring
+  back frequency data before deciding whether (a)/(b) are worth the risk.
+
 ### I-12 (v1.2.1, RESOLVED 2026-07-07) · Taskbar button of the running app still shows the old icon
 
 - **Status**: RESOLVED — reboot cleared it. Machine rebooted 2026-07-07
