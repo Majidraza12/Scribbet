@@ -198,7 +198,17 @@ added, no pipeline instrumentation changed. M6 was skipped by user decision
      with a synthetic Alt tap on retry, the I-6 workaround) plus a short
      Electron focus-routing settle. Confirmed via captured logs: click-to-talk
      stops now insert (~145–170 ms) where they previously vanished.
-  2. **Inherent / unresolved** — the inserter targets the foreground *window*
+  2. **Fixed (2026-07-08, follow-up)** — user pinned a sharper pattern: short
+     dictations always land, long ones ("talk for a while") drop. Cause: text
+     over `LONG_TEXT_PASTE_CHARS` (120) was promoted to the Clipboard tier
+     (`Ctrl+V`), and a paste into Cursor's embedded terminal is exactly the
+     unreliable path — the clipboard is restored before the pane consumes the
+     paste. Short text used SendInput and landed. Fix: never promote clipboard
+     for hosts that prefer SendInput (the Electron/Chromium set); keep typing
+     regardless of length, with clipboard only as a fallback, plus a 6 ms
+     per-batch keystroke pacing so a long typed burst isn't dropped by the
+     terminal's render loop.
+  3. **Inherent / unresolved** — the inserter targets the foreground *window*
      (`cursor.exe`); it cannot see or choose which pane inside that single
      Chromium process holds the keyboard (terminal vs editor). When focus has
      drifted to the editor pane, a successful `SendInput`/paste lands there,

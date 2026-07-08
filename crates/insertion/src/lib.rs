@@ -182,6 +182,11 @@ pub fn builtin_quirk(process: &str) -> AppQuirk {
         "cursor.exe" | "code.exe" | "chrome.exe" | "msedge.exe" | "brave.exe" | "firefox.exe"
         | "discord.exe" | "slack.exe" | "notion.exe" | "obsidian.exe" | "teams.exe" => AppQuirk {
             prefer: InsertionTier::SendInput,
+            // A small pause between 64-char batches: an embedded terminal
+            // (e.g. Cursor's) can drop characters when a long synthetic-input
+            // burst outpaces its render/input loop. Zero for short text (one
+            // batch, no pause); only a few ms per batch for long text.
+            keystroke_pacing: Duration::from_millis(6),
             ..AppQuirk::default()
         },
         _ => AppQuirk::default(),

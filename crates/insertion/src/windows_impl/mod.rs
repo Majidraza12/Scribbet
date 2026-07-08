@@ -126,9 +126,17 @@ impl TextInserter for WindowsInserter {
 
         // Long text: per-character SendInput takes visible seconds for a
         // whole dictation session (v1.2 inserts once per session); a single
-        // paste is instant. Promote the clipboard tier unless the target is
-        // a password field.
-        if allow_clipboard && text.chars().count() > LONG_TEXT_PASTE_CHARS {
+        // paste is instant. Promote the clipboard tier — but NOT for hosts
+        // that prefer SendInput (Electron/Chromium, e.g. Cursor). There a
+        // Ctrl+V into an embedded terminal pane is unreliable (the clipboard
+        // is restored before the pane finishes pasting, so long text drops
+        // while short typed text lands — docs/04 I-13); keep typing, which is
+        // proven reliable for these hosts, and leave clipboard only as a
+        // fallback. Never promote for a password field either.
+        if allow_clipboard
+            && quirk.prefer != InsertionTier::SendInput
+            && text.chars().count() > LONG_TEXT_PASTE_CHARS
+        {
             plan.retain(|t| *t != InsertionTier::Clipboard);
             plan.insert(0, InsertionTier::Clipboard);
         }
