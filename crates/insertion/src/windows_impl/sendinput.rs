@@ -71,6 +71,19 @@ pub fn release_held_modifiers() {
     }
 }
 
+/// Synthetic Alt tap. Marks this process "input-active" so a following
+/// `SetForegroundWindow` is honored despite the Windows foreground lock, which
+/// otherwise silently denies activation to a background process (docs/04 I-6 —
+/// the same workaround the test harness uses). Balanced down+up, so it never
+/// leaves Alt held.
+pub fn nudge_foreground_lock() {
+    let taps = [
+        key_event(VK_MENU, 0, KEYBD_EVENT_FLAGS(0)),
+        key_event(VK_MENU, 0, KEYEVENTF_KEYUP),
+    ];
+    let _ = send(&taps);
+}
+
 /// Sends Ctrl+End: caret to end of document. Used after a UIA `SetValue`,
 /// which places the caret at position 0 (WM_SETTEXT semantics) — without
 /// this, the *next* insertion would land in front of the text just set

@@ -1,5 +1,7 @@
 //! Foreground-window capture: HWND, pid, process name, title.
 
+use std::time::{Duration, Instant};
+
 use windows::Win32::Foundation::{CloseHandle, HWND};
 use windows::Win32::System::Threading::{
     GetCurrentProcessId, OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
@@ -30,12 +32,42 @@ pub fn capture() -> Result<FocusInfo, InsertError> {
     snapshot(hwnd)
 }
 
-/// Brings `window` to the foreground (used to hand focus back to the target
-/// when the user's stop-click left our pill focused). Succeeds only when the
-/// caller currently owns the foreground, which is exactly that case.
-pub fn activate(window: WindowId) -> bool {
+/// Brings `window` to the foreground and waits until it *actually* owns the
+/// foreground, returning true once `GetForegroundWindow() == window` or false
+/// if `budget` elapses first.
+///
+/// A single `SetForegroundWindow` is not enough: the Windows foreground lock
+/// silently denies activation to a background process (docs/04 I-6), and even
+/// when honored the switch is asynchronous — on a power-throttled laptop the
+/// target may not become foreground for well over the old fixed 80 ms delay,
+/// so a paste/keystroke fired on a timer landed in nothing (observed inserting
+/// into the terminal pane inside Cursor). This polls with a short interval and,
+/// only if a plain attempt has not taken, nudges the lock with a synthetic Alt
+/// tap before retrying — the same trick the harness uses.
+pub fn activate_and_wait(window: WindowId, budget: Duration) -> bool {
     let hwnd = HWND(window.0 as *mut core::ffi::c_void);
-    unsafe { SetForegroundWindow(hwnd) }.as_bool()
+    if unsafe { GetForegroundWindow() } == hwnd {
+        return true;
+    }
+    let deadline = Instant::now() + budget;
+    let mut nudged = false;
+    let _ = unsafe { SetForegroundWindow(hwnd) };
+    loop {
+        std::thread::sleep(Duration::from_millis(20));
+        if unsafe { GetForegroundWindow() } == hwnd {
+            return true;
+        }
+        if Instant::now() >= deadline {
+            return false;
+        }
+        // First plain retry failed: the foreground lock is likely refusing us.
+        // Nudge it once, then keep retrying plain activations.
+        if !nudged {
+            super::sendinput::nudge_foreground_lock();
+            nudged = true;
+        }
+        let _ = unsafe { SetForegroundWindow(hwnd) };
+    }
 }
 
 /// First visible, titled, non-tool window below `from` in the z-order that

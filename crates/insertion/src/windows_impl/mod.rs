@@ -84,17 +84,21 @@ impl TextInserter for WindowsInserter {
         // foreground), hand focus back before typing.
         let effective_hwnd = HWND(effective.window.0 as *mut core::ffi::c_void);
         if unsafe { GetForegroundWindow() } != effective_hwnd {
-            if !focus::activate(effective.window) {
-                return Err(InsertError::Platform(
-                    "could not re-activate the dictation target".into(),
-                ));
-            }
-            std::thread::sleep(std::time::Duration::from_millis(80));
-            if unsafe { GetForegroundWindow() } != effective_hwnd {
+            // Poll until the target really owns the foreground (nudging the
+            // foreground lock on retry) instead of trusting a single fixed
+            // delay — a throttled machine can miss an 80 ms deadline (docs/04
+            // I-6). Returns as soon as focus lands, so fast machines pay ~0.
+            if !focus::activate_and_wait(effective.window, std::time::Duration::from_millis(600)) {
                 return Err(InsertError::Platform(
                     "dictation target did not accept focus".into(),
                 ));
             }
+            // The top-level window is ours, but an Electron/Chromium host still
+            // needs a beat to route focus into its child control (e.g. the
+            // terminal pane inside Cursor) before a keystroke or paste will
+            // land (docs/04 I-10). Native Win32 targets are ready at once; the
+            // extra idle only occurs on a click-to-talk stop and is imperceptible.
+            std::thread::sleep(std::time::Duration::from_millis(120));
         }
 
         let quirk = builtin_quirk(&effective.process);
