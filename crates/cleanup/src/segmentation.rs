@@ -66,10 +66,10 @@ impl TextProcessor for Segmentation {
                 }
                 out.push(last);
                 // Exactly one space after when prose follows directly.
-                if let Some(&n) = chars.get(i) {
-                    if n.is_alphanumeric() {
-                        out.push(' ');
-                    }
+                if let Some(&n) = chars.get(i)
+                    && n.is_alphanumeric()
+                {
+                    out.push(' ');
                 }
                 continue;
             }

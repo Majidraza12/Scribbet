@@ -85,12 +85,11 @@ impl ProfileStore {
         if let Ok(read) = std::fs::read_dir(&self.dir) {
             for entry in read.flatten() {
                 let path = entry.path();
-                if path.extension().is_some_and(|e| e == "toml") {
-                    if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                        if !ids.iter().any(|i| i == stem) {
-                            ids.push(stem.to_owned());
-                        }
-                    }
+                if path.extension().is_some_and(|e| e == "toml")
+                    && let Some(stem) = path.file_stem().and_then(|s| s.to_str())
+                    && !ids.iter().any(|i| i == stem)
+                {
+                    ids.push(stem.to_owned());
                 }
             }
         }
