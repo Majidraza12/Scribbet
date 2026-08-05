@@ -1,5 +1,7 @@
 [package]
 name = "od-pipeline"
+# Internal to this workspace; never published to crates.io.
+publish = false
 description = "Session controller state machine, actor-per-stage orchestration, bounded channels, latency metrics."
 version.workspace = true
 edition.workspace = true

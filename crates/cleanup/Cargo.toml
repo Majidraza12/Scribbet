@@ -1,5 +1,7 @@
 [package]
 name = "od-cleanup"
+# Internal to this workspace; never published to crates.io.
+publish = false
 description = "Rule-based text cleanup: TextProcessor trait and the ordered processor chain (whitespace, fillers, dictionary, symbols, punctuation, segmentation, capitalization, user rules, profiles)."
 version.workspace = true
 edition.workspace = true

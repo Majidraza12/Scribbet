@@ -73,6 +73,11 @@ allow = [
     "CDLA-Permissive-2.0",
     "Unicode-3.0",
     "Ubuntu-font-1.0",
+    # whisper-rs and whisper-rs-sys are Unlicense-only. Every other Unlicense
+    # crate in the tree is dual-licensed (Unlicense OR MIT), so MIT already
+    # covered them. Unlicense is a public-domain dedication — strictly more
+    # permissive than MIT, and it carries no attribution requirement.
+    "Unlicense",
 ]
 
 [bans]
@@ -80,6 +85,10 @@ allow = [
 # pull long tails); highlight the worst offenders without failing the build.
 multiple-versions = "warn"
 wildcards = "deny"
+# The only wildcards in the tree are this workspace's own crates depending on
+# each other by path — `od-core-types = { path = "..." }` carries no version,
+# which cargo-deny reads as `*`. Third-party wildcards are still denied.
+allow-wildcard-paths = true
 
 [sources]
 unknown-registry = "deny"

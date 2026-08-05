@@ -1,5 +1,7 @@
 [package]
 name = "od-core-types"
+# Internal to this workspace; never published to crates.io.
+publish = false
 description = "Shared domain types, pipeline events, errors, and PipelineCtx used by every stage."
 version.workspace = true
 edition.workspace = true

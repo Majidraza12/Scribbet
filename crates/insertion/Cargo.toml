@@ -1,5 +1,7 @@
 [package]
 name = "od-insertion"
+# Internal to this workspace; never published to crates.io.
+publish = false
 description = "TextInserter trait and Windows backend: UIA probe/ValuePattern -> SendInput -> clipboard-paste-restore."
 version.workspace = true
 edition.workspace = true

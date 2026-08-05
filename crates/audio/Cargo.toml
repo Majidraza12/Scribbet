@@ -1,5 +1,7 @@
 [package]
 name = "od-audio"
+# Internal to this workspace; never published to crates.io.
+publish = false
 description = "Microphone capture via cpal (WASAPI), lock-free ring buffer, and input-device management."
 version.workspace = true
 edition.workspace = true
