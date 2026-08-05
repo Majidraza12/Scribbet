@@ -1,0 +1,132 @@
+name: Release
+
+# Tagging is the whole trigger: push `vX.Y.Z` and this produces the installers
+# people actually download. Nothing is built on a developer machine, so every
+# artifact is traceable to a public commit and a public workflow run.
+on:
+  push:
+    tags: ["v*"]
+  # Lets you exercise the build without publishing anything.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+env:
+  CARGO_TERM_COLOR: always
+  # MAX_PATH. MSVC's FileTracker dies with FTK1011 inside vulkan-shaders-gen
+  # when the build path is long, and the default runner workspace path is
+  # already deep. Same reason BOOTSTRAP.md tells humans to do this.
+  CARGO_TARGET_DIR: D:\t
+
+jobs:
+  build:
+    name: Build Windows installers
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # A tag that disagrees with the manifest would ship an installer whose
+      # filename and internal version differ. Fail before spending 20 minutes
+      # compiling rather than after.
+      - name: Check the tag matches the manifest
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart("v")
+          $conf = (Get-Content apps/desktop/src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          if ($tag -ne $conf) {
+            throw "Tag $tag does not match tauri.conf.json version $conf. Bump the manifest (and Cargo.toml) or retag."
+          }
+          Write-Host "Tag and manifest agree on $conf."
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      # The GPU backend is a build-time feature because compiling it needs the
+      # Vulkan SDK's shader compiler. The resulting binary still falls back to
+      # CPU at runtime on machines with no Vulkan device, so one artifact
+      # serves everyone — see the hardware section on the website.
+      - name: Install the Vulkan SDK
+        shell: pwsh
+        run: |
+          $url = "https://sdk.lunarg.com/sdk/download/latest/windows/vulkan_sdk.exe"
+          Invoke-WebRequest -Uri $url -OutFile "$env:RUNNER_TEMP\vulkan_sdk.exe"
+          & "$env:RUNNER_TEMP\vulkan_sdk.exe" --root C:\VulkanSDK --accept-licenses `
+            --default-answer --confirm-command install
+          if ($LASTEXITCODE -ne 0) { throw "Vulkan SDK install failed ($LASTEXITCODE)" }
+          "VULKAN_SDK=C:\VulkanSDK" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "C:\VulkanSDK\Bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Build the installers
+        working-directory: apps/desktop
+        shell: pwsh
+        env:
+          # whisper-rs runs bindgen, which needs libclang. Preinstalled on the
+          # windows runner image.
+          LIBCLANG_PATH: C:\Program Files\LLVM\bin
+        run: |
+          npm ci
+          npx tauri build -- --features gpu-vulkan
+
+      # Checksums let anyone verify the download matches what this run
+      # produced, which matters more than usual while the binaries are
+      # unsigned.
+      - name: Collect artifacts and checksums
+        id: collect
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist-release | Out-Null
+          Get-ChildItem -Recurse "$env:CARGO_TARGET_DIR\release\bundle" `
+            -Include *.exe, *.msi | ForEach-Object {
+              Copy-Item $_.FullName dist-release/
+            }
+          if ((Get-ChildItem dist-release).Count -eq 0) { throw "No installers were produced." }
+          # Also published loose so the attribution is readable without
+          # installing anything.
+          Copy-Item THIRD-PARTY-NOTICES.txt dist-release/
+          $files = Get-ChildItem dist-release
+          $files | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
+          } | Out-File dist-release/SHA256SUMS.txt -Encoding utf8
+          Get-Content dist-release/SHA256SUMS.txt
+
+      # Signed provenance tying these bytes to this commit and workflow. Not a
+      # code-signing certificate — it will not silence SmartScreen — but it is
+      # verifiable with `gh attestation verify`.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist-release/*
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installers
+          path: dist-release/*
+
+      # Deliberately a draft. Nothing reaches users until you look at the
+      # artifacts and press publish — and publishing is what notifies everyone
+      # watching releases. Drop --draft once you trust the pipeline.
+      - name: Publish the draft release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" (Get-ChildItem dist-release | ForEach-Object { $_.FullName }) `
+            --draft `
+            --title "OpenDictate ${{ github.ref_name }}" `
+            --generate-notes
