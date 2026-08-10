@@ -1,0 +1,115 @@
+name: Bug report
+description: Something in OpenDictate isn't working the way it should
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. The more specific you can be
+        about what you did and what happened, the faster it gets fixed.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the problem in your own words.
+      placeholder: I held the hotkey in Chrome, spoke a sentence, and nothing was inserted.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Number them if you can. If it only happens sometimes, say so.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: input
+    id: target-app
+    attributes:
+      label: Which app were you dictating into?
+      placeholder: Chrome address bar, VS Code, Slack, Notepad...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: windows-version
+    attributes:
+      label: Windows version
+      options:
+        - Windows 11
+        - Windows 10
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: How often does it happen?
+      options:
+        - Every time
+        - Often, but not always
+        - Happened once
+        - Not sure yet
+    validations:
+      required: true
+
+  - type: dropdown
+    id: build-variant
+    attributes:
+      label: Which build are you running?
+      options:
+        - GPU build (npx tauri build -- --features gpu-vulkan)
+        - CPU build (npx tauri build)
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU
+      placeholder: RTX 3060, Radeon 780M iGPU, none...
+    validations:
+      required: false
+
+  - type: input
+    id: microphone
+    attributes:
+      label: Microphone
+      placeholder: Built-in laptop mic, USB mic, Bluetooth headset...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: model
+    attributes:
+      label: Which STT model are you using?
+      options:
+        - base.en (default)
+        - large-v3-turbo
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Logs, screenshots, or anything else that might be relevant. You can paste images straight into this box.
+    validations:
+      required: false

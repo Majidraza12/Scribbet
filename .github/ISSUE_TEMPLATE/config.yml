@@ -1,0 +1,16 @@
+# Set to true to force everyone through the forms above.
+# Left false so people can still open a plain issue when nothing fits.
+blank_issues_enabled: false
+
+contact_links:
+  - name: Installation guide
+    url: https://opendictate.vercel.app/install
+    about: Setup steps and fixes for the errors people actually hit.
+
+  - name: BOOTSTRAP.md
+    url: https://github.com/Majidraza12/OpenDictate/blob/main/BOOTSTRAP.md
+    about: The full machine setup playbook, including every environment quirk.
+
+  - name: Questions and general discussion
+    url: https://github.com/Majidraza12/OpenDictate/discussions
+    about: Not sure if it's a bug? Ask here first.

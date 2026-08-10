@@ -1,0 +1,52 @@
+name: Feature request
+description: Suggest something OpenDictate should do
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Lead with the problem rather than the solution — it often leads
+        somewhere better than the fix you had in mind.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you running into?
+      placeholder: I dictate a lot of code comments and have to fix the capitalisation every time.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like OpenDictate to do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: How are you working around it today?
+      description: If you aren't, say that — it tells us how much this hurts.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: importance
+    attributes:
+      label: How much would this change your use of OpenDictate?
+      options:
+        - Nice to have
+        - Would use it regularly
+        - I'm blocked without it
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Prior art from other tools, mockups, or edge cases you've already thought about.
+    validations:
+      required: false
