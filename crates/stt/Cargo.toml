@@ -1,5 +1,7 @@
 [package]
 name = "od-stt"
+# Internal to this workspace; never published to crates.io.
+publish = false
 description = "SttEngine trait and backends: whisper.cpp (default), Moonshine ONNX (optional streaming)."
 version.workspace = true
 edition.workspace = true

@@ -1,5 +1,7 @@
 [package]
 name = "opendictate-desktop"
+# Internal to this workspace; never published to crates.io.
+publish = false
 description = "OpenDictate desktop shell: Tauri app hosting the dictation pipeline (tray, overlay, hotkeys)."
 version.workspace = true
 edition.workspace = true

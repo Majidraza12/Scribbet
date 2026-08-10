@@ -1,5 +1,7 @@
 ﻿[package]
 name = "od-commands"
+# Internal to this workspace; never published to crates.io.
+publish = false
 description = "Voice-command grammar and interpreter ('new paragraph', 'delete previous sentence', ...)."
 version.workspace = true
 edition.workspace = true

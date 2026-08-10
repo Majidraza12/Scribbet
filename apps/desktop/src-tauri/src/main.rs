@@ -453,11 +453,11 @@ fn main() {
         .on_window_event(|window, event| {
             // The settings window hides instead of closing: the app lives in
             // the tray, and re-creating the webview costs more than hiding.
-            if window.label() == "settings" {
-                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                    api.prevent_close();
-                    let _ = window.hide();
-                }
+            if window.label() == "settings"
+                && let tauri::WindowEvent::CloseRequested { api, .. } = event
+            {
+                api.prevent_close();
+                let _ = window.hide();
             }
         })
         .build(tauri::generate_context!())
@@ -707,10 +707,10 @@ fn record_history(app: &AppHandle, raw: &str, cleaned: &str) {
     }
     let profile = state.profile_name.lock().expect("profile lock").clone();
     let mut guard = state.history.lock().expect("history lock");
-    if let Some(repo) = guard.as_mut() {
-        if let Err(e) = repo.add(raw, cleaned, &profile, cap) {
-            tracing::warn!("history write failed: {e}");
-        }
+    if let Some(repo) = guard.as_mut()
+        && let Err(e) = repo.add(raw, cleaned, &profile, cap)
+    {
+        tracing::warn!("history write failed: {e}");
     }
 }
 

@@ -27,6 +27,22 @@ jobs:
       - name: Format
         run: cargo fmt --all --check
 
+      # tauri::generate_context! reads frontendDist at compile time and panics
+      # if apps/desktop/dist is missing, so the Svelte build has to happen
+      # before anything touches the desktop crate.
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Build frontend
+        working-directory: apps/desktop
+        run: |
+          npm ci
+          npm run build
+
       - name: Clippy
         run: cargo clippy --workspace --all-targets
 

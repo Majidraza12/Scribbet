@@ -142,12 +142,11 @@ impl TextProcessor for Punctuation {
             }
         }
         text = repair_splices(&text);
-        if self.cfg.ensure_terminal {
-            if let Some(last) = text.chars().next_back() {
-                if last.is_alphanumeric() {
-                    text.push('.');
-                }
-            }
+        if self.cfg.ensure_terminal
+            && let Some(last) = text.chars().next_back()
+            && last.is_alphanumeric()
+        {
+            text.push('.');
         }
         seg.text = text;
     }

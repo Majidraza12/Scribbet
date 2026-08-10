@@ -1,5 +1,7 @@
 [package]
 name = "od-storage"
+# Internal to this workspace; never published to crates.io.
+publish = false
 description = "Persistence: rusqlite repositories (history, dictionary), atomic JSON settings, TOML profiles."
 version.workspace = true
 edition.workspace = true

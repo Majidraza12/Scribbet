@@ -1,5 +1,7 @@
 [package]
 name = "od-rewrite"
+# Internal to this workspace; never published to crates.io.
+publish = false
 description = "Optional Rewriter trait. RulesRewriter passthrough is the default; Claude/OpenAI/local-LLM backends are feature-gated future plugins."
 version.workspace = true
 edition.workspace = true

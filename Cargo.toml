@@ -19,7 +19,10 @@ version = "1.2.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 repository = ""
-rust-version = "1.85"
+# Raised from 1.85 to take time 0.3.47, which patches RUSTSEC-2026-0009
+# (DoS via stack exhaustion). rust-toolchain.toml pins `stable`, so every
+# build already used a newer compiler than this line claimed.
+rust-version = "1.88"
 
 [workspace.dependencies]
 # Internal crates
