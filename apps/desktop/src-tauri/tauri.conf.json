@@ -37,6 +37,10 @@
     "targets": ["msi", "nsis"],
     "publisher": "OpenDictate",
     "category": "Productivity",
+    "licenseFile": "../../../LICENSE",
+    "resources": {
+      "../../../THIRD-PARTY-NOTICES.txt": "THIRD-PARTY-NOTICES.txt"
+    },
     "shortDescription": "Local-first dictation for Windows.",
     "longDescription": "OpenDictate turns speech into text in any Windows app — fully on-device. No cloud, no account, no telemetry. Press a hotkey, talk, and clean text lands at your caret.",
     "icon": ["icons/icon.ico", "icons/icon.png"],
