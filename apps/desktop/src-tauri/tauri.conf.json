@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "OpenDictate",
+  "productName": "Scribbet",
   "version": "1.2.2",
-  "identifier": "dev.opendictate.app",
+  "identifier": "dev.scribbet.app",
   "build": {
     "frontendDist": "../dist",
     "beforeBuildCommand": "npm run build"
@@ -11,7 +11,7 @@
     "windows": [
       {
         "label": "overlay",
-        "title": "OpenDictate",
+        "title": "Scribbet",
         "width": 150,
         "height": 48,
         "decorations": false,
@@ -35,14 +35,14 @@
   "bundle": {
     "active": true,
     "targets": ["msi", "nsis"],
-    "publisher": "OpenDictate",
+    "publisher": "Scribbet",
     "category": "Productivity",
     "licenseFile": "../../../LICENSE",
     "resources": {
       "../../../THIRD-PARTY-NOTICES.txt": "THIRD-PARTY-NOTICES.txt"
     },
     "shortDescription": "Local-first dictation for Windows.",
-    "longDescription": "OpenDictate turns speech into text in any Windows app — fully on-device. No cloud, no account, no telemetry. Press a hotkey, talk, and clean text lands at your caret.",
+    "longDescription": "Scribbet turns speech into text in any Windows app — fully on-device. No cloud, no account, no telemetry. Press a hotkey, talk, and clean text lands at your caret.",
     "icon": ["icons/icon.ico", "icons/icon.png"],
     "windows": {
       "webviewInstallMode": { "type": "downloadBootstrapper" },

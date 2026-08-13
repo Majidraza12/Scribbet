@@ -21,7 +21,7 @@ ignore = [
     # unbounded namespace-declaration allocation in NsReader (0195). Fixed
     # in quick-xml 0.39, which we cannot reach: Tauri pins `^0.38.0` and
     # 0.38.4 is the last of that line. Both require attacker-controlled XML
-    # to exploit; OpenDictate parses no XML at runtime — the dependency is
+    # to exploit; Scribbet parses no XML at runtime — the dependency is
     # Tauri's, used at bundle time. Drop these the moment Tauri allows 0.39.
     "RUSTSEC-2026-0194",
     "RUSTSEC-2026-0195",

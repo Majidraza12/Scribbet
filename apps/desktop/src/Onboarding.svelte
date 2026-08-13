@@ -60,7 +60,7 @@
 
 <div class="page">
   <div class="logo">🎙</div>
-  <h1>Welcome to OpenDictate</h1>
+  <h1>Welcome to Scribbet</h1>
   <p class="tagline">Press a hotkey, talk, and clean text lands at your caret — in any app.</p>
 
   <div class="card">
@@ -75,14 +75,14 @@
   <div class="card">
     <h2>One-time setup: speech model</h2>
     <p>
-      OpenDictate needs the Whisper speech-recognition model
+      Scribbet needs the Whisper speech-recognition model
       (≈{status ? mb(status.size_hint) : "60"} MB), downloaded once from Hugging Face and
       verified against a built-in checksum.
     </p>
 
     {#if done}
       <p class="ok">✓ Model ready.</p>
-      <button class="primary" onclick={restart}>Restart OpenDictate</button>
+      <button class="primary" onclick={restart}>Restart Scribbet</button>
     {:else if downloading}
       <div class="barwrap"><div class="bar" style="width:{pct}%"></div></div>
       <p class="dim">{mb(got)} / {total > 0 ? mb(total) : "…"} MB</p>

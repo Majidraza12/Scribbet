@@ -66,7 +66,7 @@
     class:live={sessionState === "listening"}
     class:busy={sessionState === "finalizing"}
     onclick={clickToTalk}
-    title="OpenDictate — click to talk"
+    title="Scribbet — click to talk"
   >
     {#if sessionState === "idle"}
       <span class="sliver"></span>

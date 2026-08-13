@@ -6,7 +6,7 @@ use crate::TextProcessor;
 use crate::phrase::{PhrasePair, replace_phrases, sort_for_matching};
 
 /// Replaces spoken forms with the user's written forms ("open dictate" →
-/// "OpenDictate"). Entries come from the profile snapshot (SQLite-backed,
+/// "Scribbet"). Entries come from the profile snapshot (SQLite-backed,
 /// resolved by od-storage); matching is whole-word, case-insensitive unless
 /// an entry opts into case sensitivity, longest spoken form first.
 pub struct Dictionary {
@@ -59,14 +59,14 @@ mod tests {
     #[test]
     fn dictionary_golden() {
         let proc = Dictionary::new(&[
-            entry("open dictate", "OpenDictate"),
+            entry("open dictate", "Scribbet"),
             entry("eye gore", "Igor"),
             entry("kubernetes", "Kubernetes"),
         ]);
         golden(
             &proc,
             &[
-                ("open dictate ships", "OpenDictate ships"),
+                ("open dictate ships", "Scribbet ships"),
                 ("ask eye gore about kubernetes", "ask Igor about Kubernetes"),
                 ("the gore scene", "the gore scene"),
                 ("openly dictate terms", "openly dictate terms"),

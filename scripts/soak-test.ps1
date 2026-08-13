@@ -5,21 +5,21 @@
 # Usage:
 #   powershell -File scripts\soak-test.ps1                 # 10 min (the M9 gate run)
 #   powershell -File scripts\soak-test.ps1 -Minutes 1      # quick check
-#   powershell -File scripts\soak-test.ps1 -ExePath path\to\opendictate-desktop.exe
+#   powershell -File scripts\soak-test.ps1 -ExePath path\to\scribbet-desktop.exe
 #
 # Run against the RELEASE binary for numbers that mean anything:
-#   cargo build --release -p opendictate-desktop
+#   cargo build --release -p scribbet-desktop
 
 param(
     [double]$Minutes = 10,
-    [string]$ExePath = "target\release\opendictate-desktop.exe",
+    [string]$ExePath = "target\release\scribbet-desktop.exe",
     [int]$SampleSeconds = 5
 )
 
 $ErrorActionPreference = "Stop"
 
 if (-not (Test-Path $ExePath)) {
-    throw "Binary not found: $ExePath (build with: cargo build --release -p opendictate-desktop)"
+    throw "Binary not found: $ExePath (build with: cargo build --release -p scribbet-desktop)"
 }
 
 $proc = Start-Process -FilePath $ExePath -PassThru

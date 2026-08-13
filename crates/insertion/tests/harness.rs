@@ -164,7 +164,7 @@ fn inserts_into_real_edit_control_and_reads_back() {
     // First insertion: field is empty → the UIA ValuePattern fast path is
     // eligible (falls back to SendInput transparently if the classic EDIT
     // control's UIA proxy declines).
-    let first = "Hello from OpenDictate. ";
+    let first = "Hello from Scribbet. ";
     let outcome1 = inserter.insert(first, &target).expect("insert #1");
     println!(
         "insert #1 via {:?} in {:?}",

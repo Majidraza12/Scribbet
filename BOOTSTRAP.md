@@ -1,6 +1,6 @@
-# OpenDictate — Machine Bootstrap
+# Scribbet — Machine Bootstrap
 
-Playbook for setting up OpenDictate on a fresh Windows machine from a clone of
+Playbook for setting up Scribbet on a fresh Windows machine from a clone of
 this repo. Written to be executed by Claude Code, but every step works by hand.
 
 **Paste this prompt into Claude Code after cloning:**
@@ -81,11 +81,11 @@ Bundles land in `C:\odt\release\bundle\` (`nsis\` and `msi\`).
 ## 4. Install and run
 
 ```powershell
-& "C:\odt\release\bundle\nsis\OpenDictate_<version>_x64-setup.exe" /S
-& "$env:LOCALAPPDATA\OpenDictate\opendictate-desktop.exe"
+& "C:\odt\release\bundle\nsis\Scribbet_<version>_x64-setup.exe" /S
+& "$env:LOCALAPPDATA\Scribbet\scribbet-desktop.exe"
 ```
 
-- Installs per-user to `%LOCALAPPDATA%\OpenDictate`. Never run the exe from
+- Installs per-user to `%LOCALAPPDATA%\Scribbet`. Never run the exe from
   the build dir — the file lock breaks the next rebuild.
 - Unsigned binary: SmartScreen shows "unknown publisher" on interactive
   install. More info → Run anyway. (`/S` silent install skips the dialog.)
@@ -105,8 +105,8 @@ Bundles land in `C:\odt\release\bundle\` (`nsis\` and `msi\`).
 
 Default is `base.en` (fast, light). For noticeably better accuracy on a
 machine with GPU headroom, drop `ggml-large-v3-turbo-q5_0.bin` into
-`%LOCALAPPDATA%\OpenDictate\models\` and set `"stt_model"` to that file name
-in `%APPDATA%\OpenDictate\settings.json` (Settings window can do this too).
+`%LOCALAPPDATA%\Scribbet\models\` and set `"stt_model"` to that file name
+in `%APPDATA%\Scribbet\settings.json` (Settings window can do this too).
 Missing/typo'd model name falls back to base.en — the app never starts deaf.
 
 **Warning:** `settings.json` is BOM-sensitive. If editing from PowerShell 5.1,

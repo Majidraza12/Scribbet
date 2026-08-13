@@ -1,4 +1,4 @@
-//! OpenDictate desktop shell (M3, extended in M7).
+//! Scribbet desktop shell (M3, extended in M7).
 //!
 //! Hosts the session controller, registers global hotkeys, and projects
 //! pipeline events onto the tray icon and the overlay pill. Rust owns all
@@ -473,13 +473,13 @@ fn main() {
         });
 }
 
-/// `%APPDATA%\OpenDictate` — settings, profiles, and the dictionary DB
+/// `%APPDATA%\Scribbet` — settings, profiles, and the dictionary DB
 /// (ADR-10). The STT model lives separately under `%LOCALAPPDATA%`.
 fn config_dir() -> PathBuf {
     std::env::var_os("APPDATA")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("."))
-        .join("OpenDictate")
+        .join("Scribbet")
 }
 
 /// Resolves the active profile into a pipeline context; errors are strings
@@ -563,7 +563,7 @@ fn register_hotkeys(app: &AppHandle, toggle: &str, ptt: &str) -> Result<(), Stri
 
 fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     let settings_item = MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit OpenDictate", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit Scribbet", true, None::<&str>)?;
     let menu = MenuBuilder::new(app)
         .item(&settings_item)
         .item(&quit)
@@ -575,7 +575,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
                 .expect("bundle icon configured")
                 .clone(),
         )
-        .tooltip("OpenDictate — idle")
+        .tooltip("Scribbet — idle")
         .menu(&menu)
         .show_menu_on_left_click(true)
         .on_menu_event(|app, event| match event.id.as_ref() {
@@ -603,7 +603,7 @@ fn show_settings(app: &AppHandle) {
         "settings",
         tauri::WebviewUrl::App("index.html".into()),
     )
-    .title("OpenDictate Settings")
+    .title("Scribbet Settings")
     .inner_size(900.0, 640.0)
     .min_inner_size(720.0, 480.0)
     .center()
@@ -619,7 +619,7 @@ fn show_onboarding(app: &AppHandle) {
         "onboarding",
         tauri::WebviewUrl::App("index.html".into()),
     )
-    .title("Welcome to OpenDictate")
+    .title("Welcome to Scribbet")
     .inner_size(560.0, 560.0)
     .resizable(false)
     .maximizable(false)
@@ -717,9 +717,9 @@ fn record_history(app: &AppHandle, raw: &str, cleaned: &str) {
 fn apply_state(app: &AppHandle, state: SessionState) {
     if let Some(tray) = app.tray_by_id("main") {
         let tip = match state {
-            SessionState::Idle => "OpenDictate — idle",
-            SessionState::Listening => "OpenDictate — LISTENING",
-            SessionState::Finalizing => "OpenDictate — finishing…",
+            SessionState::Idle => "Scribbet — idle",
+            SessionState::Listening => "Scribbet — LISTENING",
+            SessionState::Finalizing => "Scribbet — finishing…",
         };
         let _ = tray.set_tooltip(Some(tip));
     }

@@ -250,13 +250,13 @@ mod tests {
         };
         let entries = vec![DictEntry {
             spoken: "open dictate".into(),
-            written: "OpenDictate".into(),
+            written: "Scribbet".into(),
             case_sensitive: false,
         }];
         let ctx = ctx_with(cfg, entries);
         assert_eq!(
             run_chain(&ctx, "open dictate is gonna ship"),
-            "OpenDictate is going to ship."
+            "Scribbet is going to ship."
         );
     }
 
@@ -265,7 +265,7 @@ mod tests {
     fn chain_cost_measurement() {
         let entries = vec![DictEntry {
             spoken: "open dictate".into(),
-            written: "OpenDictate".into(),
+            written: "Scribbet".into(),
             case_sensitive: false,
         }];
         let ctx = ctx_with(CleanupConfig::default(), entries);

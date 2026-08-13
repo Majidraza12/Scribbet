@@ -1,4 +1,4 @@
-//! Shared domain types for the OpenDictate pipeline.
+//! Shared domain types for the Scribbet pipeline.
 //!
 //! This crate is a deliberate chokepoint (ADR-16): every stage speaks these
 //! types, and nothing here may depend on audio backends, models, or OS APIs.
@@ -189,7 +189,7 @@ impl serde::Serialize for SegmentId {
 pub struct DictEntry {
     /// The form STT tends to produce ("open dictate", "eye gore").
     pub spoken: String,
-    /// The form the user wants inserted ("OpenDictate", "Igor").
+    /// The form the user wants inserted ("Scribbet", "Igor").
     pub written: String,
     /// If true, `spoken` must match exactly; otherwise matching is
     /// case-insensitive on whole-word boundaries.

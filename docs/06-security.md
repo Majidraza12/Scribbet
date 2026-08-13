@@ -1,6 +1,6 @@
 # 06 — Security & Privacy Threat Model
 
-Scope: OpenDictate desktop app, Windows-first, default (rules-only, offline) build.
+Scope: Scribbet desktop app, Windows-first, default (rules-only, offline) build.
 Method: asset → threat → mitigation, STRIDE-flavored, plus privacy posture.
 
 ## Trust boundaries
@@ -10,7 +10,7 @@ Method: asset → threat → mitigation, STRIDE-flavored, plus privacy posture.
   ┌─ hardware ──────────┐                (user grant, OS indicator)
   │  microphone         │══════════════════╗
   └─────────────────────┘                  ▼
-┌─ OpenDictate process (user privilege, TRUSTED) ─────────────────────────────────────┐
+┌─ Scribbet process (user privilege, TRUSTED) ─────────────────────────────────────┐
 │                                                                                     │
 │   audio (RAM ring buffer only, never disk)                                          │
 │      └─► VAD ─► STT ─► cleanup chain ─► [rewriter?] ─► insertion engine             │
@@ -96,7 +96,7 @@ local to the user account.
   best-effort for non-text formats; delay-render formats from other apps are not
   persisted by us.
 - We never *read* the clipboard except during that snapshot/restore window.
-- "Clipboard history" feature stores only text *OpenDictate itself inserted* — never a
+- "Clipboard history" feature stores only text *Scribbet itself inserted* — never a
   general clipboard monitor.
 - Clipboard writes marked with `CF_CLIPBOARD_VIEWER_IGNORE`-style hints where supported
   so clipboard-history managers skip transient pastes.

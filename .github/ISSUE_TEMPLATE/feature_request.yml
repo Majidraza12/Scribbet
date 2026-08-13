@@ -1,5 +1,5 @@
 name: Feature request
-description: Suggest something OpenDictate should do
+description: Suggest something Scribbet should do
 title: "[Feature] "
 labels: ["enhancement"]
 body:
@@ -20,7 +20,7 @@ body:
   - type: textarea
     id: proposal
     attributes:
-      label: What would you like OpenDictate to do?
+      label: What would you like Scribbet to do?
     validations:
       required: true
 
@@ -35,7 +35,7 @@ body:
   - type: dropdown
     id: importance
     attributes:
-      label: How much would this change your use of OpenDictate?
+      label: How much would this change your use of Scribbet?
       options:
         - Nice to have
         - Would use it regularly

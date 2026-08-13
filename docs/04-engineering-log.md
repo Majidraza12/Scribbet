@@ -92,7 +92,7 @@ encoder cost — and hardware inventory found an RTX 4060 the "CPU baseline"
 assumption had been ignoring.
 
 Fix: whisper-rs `vulkan` feature, exposed as `od-stt/vulkan` →
-`opendictate-desktop/gpu-vulkan` (ADR-20). No source changes to the decode
+`scribbet-desktop/gpu-vulkan` (ADR-20). No source changes to the decode
 path — `WhisperContextParameters::default()` enables GPU when the feature is
 compiled in, and ggml falls back to CPU at runtime when no Vulkan device
 exists, so the GPU binary is safe everywhere.
@@ -137,7 +137,7 @@ Numbers from the dev machine (4-core+ laptop-class CPU, no GPU assumed).
 | Transcript accuracy on fixtures | n/a | exact on 4/4 | unchanged | exact (e2e, incl. cleaned insertion) | exact | exact |
 
 M8 release measurements: `scripts/soak-test.ps1` against
-`target/release/opendictate-desktop.exe`. Idle RAM note: 123.6 MB is 3 % over
+`target/release/scribbet-desktop.exe`. Idle RAM note: 123.6 MB is 3 % over
 the 120 MB soft target and 2× inside the 250 MB hard ceiling; ~59 MB of it is
 the eagerly resident whisper model — deliberate, because lazy loading would
 push model-load latency into the user's first utterance. Settings/onboarding
@@ -250,7 +250,7 @@ added, no pipeline instrumentation changed. M6 was skipped by user decision
   DBs deleted + Explorer restarted + `ie4uinit -show`; pin/unpin tried.
   Taskbar button still shows the old icon within the same Windows session.
 - **Post-reboot verification (2026-07-07)**: running process confirmed to be
-  the installed exe (`%LOCALAPPDATA%\OpenDictate\opendictate-desktop.exe`);
+  the installed exe (`%LOCALAPPDATA%\Scribbet\scribbet-desktop.exe`);
   runtime window icon confirmed orange via `WM_GETICON` on the live window
   (rules out the stale-`generate_context!`-bytes suspect); Start-Menu `.lnk`
   icon is `,0` (exe resource, orange); no stale pinned-taskbar `.lnk`
@@ -264,7 +264,7 @@ added, no pipeline instrumentation changed. M6 was skipped by user decision
 ### I-9 (v1.2) · Stop-click on the overlay pill typed the text into the pill
 
 - **Symptom**: sessions stopped via click-to-talk inserted nowhere visible;
-  log showed `focus moved since capture … to=opendictate-desktop.exe`.
+  log showed `focus moved since capture … to=scribbet-desktop.exe`.
 - **Root cause**: clicking the pill makes the overlay the foreground window;
   the inserter's by-design "follow the user's focus" rule then treated our
   own pill as the user's chosen target.
@@ -406,7 +406,7 @@ added, no pipeline instrumentation changed. M6 was skipped by user decision
 ### I-5 (M4) · UIA SetValue parks the caret at 0 → later text prepends
 
 - **Symptom**: harness test: two consecutive insertions came out as
-  `"Ünïcode…Hello from OpenDictate."` — second utterance *before* the first.
+  `"Ünïcode…Hello from Scribbet."` — second utterance *before* the first.
 - **Root cause**: tier 1 (`ValuePattern::SetValue`) is WM_SETTEXT under the
   hood; it fills the field but leaves the caret at position 0, so the next
   utterance's SendInput events typed at the front.

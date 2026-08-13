@@ -10,7 +10,7 @@
 
 $ErrorActionPreference = "Stop"
 
-$modelDir = Join-Path $env:LOCALAPPDATA "OpenDictate\models"
+$modelDir = Join-Path $env:LOCALAPPDATA "Scribbet\models"
 New-Item -ItemType Directory -Force $modelDir | Out-Null
 
 $models = @(

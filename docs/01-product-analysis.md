@@ -1,6 +1,6 @@
 # 01 — Product Analysis: AI Dictation Category
 
-Survey of the modern AI-dictation category, done to position OpenDictate. Analysis is of
+Survey of the modern AI-dictation category, done to position Scribbet. Analysis is of
 publicly observable product behavior only — no proprietary implementation details were
 used or copied.
 
@@ -16,7 +16,7 @@ quality.
 
 ## Comparison matrix
 
-| Dimension | Wispr Flow | SuperWhisper | Aqua Voice | MacWhisper | Win Voice Access | Apple Dictation | **OpenDictate (target)** |
+| Dimension | Wispr Flow | SuperWhisper | Aqua Voice | MacWhisper | Win Voice Access | Apple Dictation | **Scribbet (target)** |
 |---|---|---|---|---|---|---|---|
 | Platform | mac/Win | macOS | Web/mac | macOS | Windows | Apple | **Windows → cross-platform** |
 | Processing locality | Cloud | Local | Cloud | Local | Local | Local/hybrid | **Local (cloud opt-in rewrite only)** |
@@ -66,7 +66,7 @@ quality.
 
 ## Non-Goals
 
-OpenDictate is a dictation utility, not a platform. Explicitly out of scope — both to
+Scribbet is a dictation utility, not a platform. Explicitly out of scope — both to
 protect the footprint budget and to keep the product legible:
 
 - **Not an AI assistant.** No question answering, no "ask your computer" mode, no agentic

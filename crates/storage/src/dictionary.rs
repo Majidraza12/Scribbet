@@ -171,7 +171,7 @@ mod tests {
 
     fn seeded() -> SqliteDictionaryRepo {
         let mut repo = SqliteDictionaryRepo::open_in_memory().unwrap();
-        repo.add("user", &entry("open dictate", "OpenDictate"))
+        repo.add("user", &entry("open dictate", "Scribbet"))
             .unwrap();
         repo.add("programming", &entry("kubernetes", "Kubernetes"))
             .unwrap();
@@ -196,11 +196,11 @@ mod tests {
     #[test]
     fn upsert_replaces_written_form() {
         let mut repo = seeded();
-        repo.add("user", &entry("open dictate", "opendictate.dev"))
+        repo.add("user", &entry("open dictate", "scribbet.dev"))
             .unwrap();
         let e = repo.entries(&["user".to_owned()]).unwrap();
         assert_eq!(e.len(), 1);
-        assert_eq!(e[0].written, "opendictate.dev");
+        assert_eq!(e[0].written, "scribbet.dev");
     }
 
     #[test]

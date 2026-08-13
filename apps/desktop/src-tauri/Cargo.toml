@@ -1,8 +1,8 @@
 [package]
-name = "opendictate-desktop"
+name = "scribbet-desktop"
 # Internal to this workspace; never published to crates.io.
 publish = false
-description = "OpenDictate desktop shell: Tauri app hosting the dictation pipeline (tray, overlay, hotkeys)."
+description = "Scribbet desktop shell: Tauri app hosting the dictation pipeline (tray, overlay, hotkeys)."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -39,7 +39,7 @@ sha2 = "0.10"
 gpu-vulkan = ["od-stt/vulkan"]
 
 [[bin]]
-name = "opendictate-desktop"
+name = "scribbet-desktop"
 path = "src/main.rs"
 
 [dev-dependencies]

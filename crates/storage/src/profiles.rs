@@ -416,7 +416,7 @@ mod tests {
             "user",
             &DictEntry {
                 spoken: "open dictate".into(),
-                written: "OpenDictate".into(),
+                written: "Scribbet".into(),
                 case_sensitive: false,
             },
         )
@@ -424,7 +424,7 @@ mod tests {
         let store = ProfileStore::new(std::env::temp_dir().join("od-does-not-exist"));
         let p = store.load("general").unwrap();
         let ctx = resolve_profile(&p, &repo).unwrap();
-        assert_eq!(ctx.vocab.terms, vec!["OpenDictate".to_owned()]);
+        assert_eq!(ctx.vocab.terms, vec!["Scribbet".to_owned()]);
         assert_eq!(ctx.profile.entries.len(), 1);
     }
 

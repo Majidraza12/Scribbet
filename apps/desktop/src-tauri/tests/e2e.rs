@@ -7,7 +7,7 @@
 //!
 //! `#[ignore]`d: needs the local STT model (scripts/fetch-models.ps1) and an
 //! interactive desktop (SendInput + foreground activation). Run serially:
-//! `cargo test -p opendictate-desktop --release -- --ignored --test-threads=1 --nocapture`
+//! `cargo test -p scribbet-desktop --release -- --ignored --test-threads=1 --nocapture`
 //!
 //! Foreground guard: same pattern as the od-insertion harness (docs/04 I-6)
 //! — if this process cannot own the foreground, the test SKIPS rather than
@@ -42,7 +42,7 @@ fn create_edit_window() -> (HWND, HWND) {
         let popup = CreateWindowExW(
             WINDOW_EX_STYLE(0),
             w!("STATIC"),
-            w!("opendictate e2e harness"),
+            w!("scribbet e2e harness"),
             WS_POPUP | WS_VISIBLE,
             100,
             100,
