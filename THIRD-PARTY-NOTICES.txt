@@ -1,7 +1,7 @@
-OpenDictate — Third-Party Notices
+Scribbet — Third-Party Notices
 =================================
 
-OpenDictate itself is MIT licensed; see LICENSE. It also redistributes the
+Scribbet itself is MIT licensed; see LICENSE. It also redistributes the
 open-source components listed below, whose licences require their copyright
 notices to travel with the binary. This file is that notice.
 

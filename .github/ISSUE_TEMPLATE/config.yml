@@ -4,13 +4,13 @@ blank_issues_enabled: false
 
 contact_links:
   - name: Installation guide
-    url: https://opendictate.vercel.app/install
+    url: https://scribbet.vercel.app/install
     about: Setup steps and fixes for the errors people actually hit.
 
   - name: BOOTSTRAP.md
-    url: https://github.com/Majidraza12/OpenDictate/blob/main/BOOTSTRAP.md
+    url: https://github.com/Majidraza12/Scribbet/blob/main/BOOTSTRAP.md
     about: The full machine setup playbook, including every environment quirk.
 
   - name: Questions and general discussion
-    url: https://github.com/Majidraza12/OpenDictate/discussions
+    url: https://github.com/Majidraza12/Scribbet/discussions
     about: Not sure if it's a bug? Ask here first.

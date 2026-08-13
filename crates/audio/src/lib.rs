@@ -1,4 +1,4 @@
-//! Microphone capture for OpenDictate.
+//! Microphone capture for Scribbet.
 //!
 //! Owns the capture edge of the pipeline: open an input device via cpal
 //! (WASAPI on Windows), convert whatever the device delivers to the

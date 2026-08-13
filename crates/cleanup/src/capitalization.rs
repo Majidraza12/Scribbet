@@ -16,7 +16,7 @@ pub struct Capitalization {
 }
 
 impl Capitalization {
-    /// `proper_nouns` come from the profile ("Majid", "OpenDictate", ...);
+    /// `proper_nouns` come from the profile ("Majid", "Scribbet", ...);
     /// they are matched case-insensitively and written back as configured.
     pub fn new(proper_nouns: &[String]) -> Self {
         let mut proper: Vec<PhrasePair> =
@@ -134,12 +134,12 @@ mod tests {
 
     #[test]
     fn proper_nouns_from_profile() {
-        let proc = Capitalization::new(&["Majid".into(), "OpenDictate".into()]);
+        let proc = Capitalization::new(&["Majid".into(), "Scribbet".into()]);
         golden(
             &proc,
             &[(
-                "tell majid that opendictate works",
-                "Tell Majid that OpenDictate works",
+                "tell majid that scribbet works",
+                "Tell Majid that Scribbet works",
             )],
         );
     }

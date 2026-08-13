@@ -256,7 +256,7 @@
 
 <div class="shell">
   <nav>
-    <div class="brand">OpenDictate</div>
+    <div class="brand">Scribbet</div>
     {#each tabs as t (t)}
       <button class="navitem" class:active={tab === t} onclick={() => (tab = t)}>{t}</button>
     {/each}
@@ -412,7 +412,7 @@
       <div class="dictadd">
         <input placeholder="spoken form (e.g. open dictate)" bind:value={newSpoken} />
         <span class="arrow">→</span>
-        <input placeholder="written form (e.g. OpenDictate)" bind:value={newWritten} />
+        <input placeholder="written form (e.g. Scribbet)" bind:value={newWritten} />
         <label class="check small"><input type="checkbox" bind:checked={newCase} />exact case</label>
         <button class="primary" onclick={addEntry}>Add</button>
       </div>
@@ -435,8 +435,8 @@
     {:else if tab === "History" && settings}
       <h1>History</h1>
       <p class="hint">
-        Everything OpenDictate inserted, stored only on this device
-        (%APPDATA%\OpenDictate). Recover text when insertion failed or you need it again.
+        Everything Scribbet inserted, stored only on this device
+        (%APPDATA%\Scribbet). Recover text when insertion failed or you need it again.
       </p>
 
       <div class="row">

@@ -1,4 +1,4 @@
-# OpenDictate — Roadmap & Living Checklist
+# Scribbet — Roadmap & Living Checklist
 
 Status legend: ☐ todo · ◐ in progress · ☑ done · ⏸ deferred
 Every milestone ends with a **review gate**: code + tests presented, user approves before
@@ -218,7 +218,7 @@ interpreter design remains valid if this is ever revisited post-v1.
 Trigger: first real daily use — 2–3 s perceived lag unusable for natural
 dictation; machine turned out to have an RTX 4060 the CPU-baseline
 assumption ignored.
-- [x] `od-stt/vulkan` → `opendictate-desktop/gpu-vulkan` features (ADR-20);
+- [x] `od-stt/vulkan` → `scribbet-desktop/gpu-vulkan` features (ADR-20);
       whisper on GPU, runtime CPU fallback keeps the binary universal
 - [x] Finalize 196 ms measured (was ~1200 ms) — **P1-1 target met**;
       transcripts exact; idle RAM ~112 MB (model in VRAM)

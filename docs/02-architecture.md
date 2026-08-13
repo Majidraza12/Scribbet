@@ -1,13 +1,13 @@
 # 02 — Architecture
 
-OpenDictate is a single Rust process hosting a staged, actor-based audio→text pipeline,
+Scribbet is a single Rust process hosting a staged, actor-based audio→text pipeline,
 with a thin Tauri/Svelte UI attached over IPC. Every stage sits behind a trait; the
 default configuration uses zero ML beyond STT+VAD and zero network.
 
 ## System diagram
 
 ```
-┌─────────────────────────────── OpenDictate (Tauri app, one process) ───────────────────────────────┐
+┌─────────────────────────────── Scribbet (Tauri app, one process) ───────────────────────────────┐
 │                                                                                                     │
 │  ┌───────────── webview ─────────────┐          ┌──────────────── Rust core ────────────────────┐  │
 │  │ Svelte 5 UI                       │  events  │                                                │  │
@@ -183,7 +183,7 @@ bundle. Everything the pipeline consults that can vary by context lives in the a
 profile:
 
 ```toml
-# %APPDATA%/OpenDictate/profiles/coding.toml
+# %APPDATA%/Scribbet/profiles/coding.toml
 [profile]           # identity
 name = "Coding"
 

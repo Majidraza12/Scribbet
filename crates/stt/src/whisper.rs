@@ -54,12 +54,12 @@ impl Default for WhisperConfig {
 }
 
 /// Default location of the dev-fetched STT model
-/// (`%LOCALAPPDATA%/OpenDictate/models/`).
+/// (`%LOCALAPPDATA%/Scribbet/models/`).
 pub fn default_model_path() -> PathBuf {
     let base = std::env::var_os("LOCALAPPDATA")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("."));
-    base.join("OpenDictate")
+    base.join("Scribbet")
         .join("models")
         .join("ggml-base.en-q5_1.bin")
 }

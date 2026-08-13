@@ -1,4 +1,4 @@
-# OpenDictate
+# Scribbet
 
 Local-first AI dictation for the desktop. Hold a hotkey, speak naturally, and polished
 text is inserted into whatever application has focus — offline, private, and light enough
@@ -9,7 +9,7 @@ Windows-first; core is portable Rust with platform backends behind traits.
 ## Why
 
 Every polished dictation product today makes you choose: cloud quality with your voice
-leaving the machine, or local privacy with raw robotic transcripts. OpenDictate's default
+leaving the machine, or local privacy with raw robotic transcripts. Scribbet's default
 pipeline is **entirely local and model-minimal** — modern speech recognition plus a
 rule-based cleanup chain (punctuation, casing, filler removal, custom vocabulary,
 programming symbols) that costs microseconds, not gigabytes. LLM rewriting exists as a

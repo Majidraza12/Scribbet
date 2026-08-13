@@ -113,15 +113,9 @@ mod tests {
 
     #[test]
     fn case_insensitive_by_default() {
-        let p = pairs(&[("open dictate", "OpenDictate")]);
-        assert_eq!(
-            replace_phrases("Open Dictate rocks", &p),
-            "OpenDictate rocks"
-        );
-        assert_eq!(
-            replace_phrases("open dictate rocks", &p),
-            "OpenDictate rocks"
-        );
+        let p = pairs(&[("open dictate", "Scribbet")]);
+        assert_eq!(replace_phrases("Open Dictate rocks", &p), "Scribbet rocks");
+        assert_eq!(replace_phrases("open dictate rocks", &p), "Scribbet rocks");
     }
 
     #[test]

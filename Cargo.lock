@@ -2800,31 +2800,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
-name = "opendictate-desktop"
-version = "1.2.2"
-dependencies = [
- "hound",
- "od-audio",
- "od-cleanup",
- "od-core-types",
- "od-insertion",
- "od-pipeline",
- "od-storage",
- "od-stt",
- "serde",
- "serde_json",
- "sha2",
- "tauri",
- "tauri-build",
- "tauri-plugin-global-shortcut",
- "tauri-plugin-single-instance",
- "tracing",
- "tracing-subscriber",
- "ureq 2.12.1",
- "windows 0.62.2",
-]
-
-[[package]]
 name = "openssl"
 version = "0.10.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3626,6 +3601,31 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "scribbet-desktop"
+version = "1.2.2"
+dependencies = [
+ "hound",
+ "od-audio",
+ "od-cleanup",
+ "od-core-types",
+ "od-insertion",
+ "od-pipeline",
+ "od-storage",
+ "od-stt",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-single-instance",
+ "tracing",
+ "tracing-subscriber",
+ "ureq 2.12.1",
+ "windows 0.62.2",
+]
 
 [[package]]
 name = "security-framework"

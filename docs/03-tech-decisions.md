@@ -113,7 +113,7 @@ Signed update manifests (Tauri v2 updater), release channel on GitHub Releases.
 Update *check* is a network call: performed only on explicit user action or when
 auto-update is enabled in settings (single toggle; off = zero network, consistent
 with ADR-7). Models are not part of app updates — downloaded separately with checksum
-verification to `%LOCALAPPDATA%/OpenDictate/models`.
+verification to `%LOCALAPPDATA%/Scribbet/models`.
 
 ## ADR-15 · UI stack: Svelte 5 + TypeScript
 
@@ -187,7 +187,7 @@ sensitive-ish store) would exist. The candidate was SQLCipher via
 **Decision.** Ship v1 with plain SQLite. Revisit only if the threat model changes.
 
 **Why.**
-- *No key to protect the data with.* OpenDictate has no passphrase and no login. Any key
+- *No key to protect the data with.* Scribbet has no passphrase and no login. Any key
   would sit next to the database (file or DPAPI under the same user account), so SQLCipher
   would only stop an attacker who can read `%APPDATA%` but somehow cannot read the key —
   not a real boundary on a single-user Windows box. An attacker with the user's rights
