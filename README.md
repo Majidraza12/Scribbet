@@ -6,6 +6,10 @@ to forget it's running.
 
 Windows-first; core is portable Rust with platform backends behind traits.
 
+**[Website and demo video](https://scribbet.vercel.app)** · **[Download for Windows](https://github.com/Majidraza12/Scribbet/releases/latest)**
+
+[![Scribbet](docs/screenshots/hero.png)](https://scribbet.vercel.app)
+
 ## Why
 
 Every polished dictation product today makes you choose: cloud quality with your voice
@@ -61,8 +65,11 @@ ROADMAP.md      living milestone checklist
 
 ## Installing
 
-No prebuilt binaries yet — build from source (a few minutes on a normal
-machine).
+**Installer:** download the `x64-setup.exe` (or the `.msi`) from the
+[latest release](https://github.com/Majidraza12/Scribbet/releases/latest).
+About 15 MB, Windows 10/11 64-bit; checksums are in `SHA256SUMS.txt`.
+
+**From source** takes a few minutes on a normal machine.
 
 **The easy way:** clone this repo, open [Claude Code](https://claude.com/claude-code)
 in it, and paste the prompt at the top of [`BOOTSTRAP.md`](BOOTSTRAP.md). It
@@ -97,7 +104,7 @@ quirks), see [`BOOTSTRAP.md`](BOOTSTRAP.md).
 
 ## Status
 
-**v1.2.1 — daily driver.** Shipped and in full-time use as the author's
+**v1.3.0 — daily driver.** Shipped and in full-time use as the author's
 replacement for Wispr Flow. Highlights since v1.0: GPU (Vulkan) whisper with
 ~200–400 ms finalize on a mid-range card and runtime CPU fallback,
 session-batched insertion with per-app quirk handling for Electron/Chromium
